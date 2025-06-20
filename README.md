@@ -52,6 +52,7 @@ UPAÉFLIX is a comprehensive open-source streaming platform designed for on-dema
 Access the application at `http://localhost:5000`
 
 ### 🔐 Default Admin Credentials
+Access the Admin application at `http://localhost:5000/admin`
 Username: admin
 Password: admin123
 
