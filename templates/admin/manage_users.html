@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Usuários - UpaéFLIX Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}" type="image/x-icon">
+    <style>
+        .user-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .search-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--input-bg);
+            color: var(--text-color);
+            font-size: 14px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+        }
+
+        .users-table {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: var(--table-header-bg);
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .table-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .users-list {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .users-list th,
+        .users-list td {
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .users-list th {
+            background: var(--table-header-bg);
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .users-list tr:hover {
+            background: var(--hover-bg);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .user-details h4 {
+            margin: 0 0 4px 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .user-email {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .user-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-admin {
+            background: rgba(220, 38, 127, 0.1);
+            color: #dc267f;
+            border: 1px solid rgba(220, 38, 127, 0.2);
+        }
+
+        .status-user {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-edit {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+        }
+
+        .btn-edit:hover {
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        .btn-toggle {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .btn-toggle:hover {
+            background: rgba(245, 158, 11, 0.2);
+        }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .btn-delete:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            padding: 20px;
+        }
+
+        .pagination a,
+        .pagination span {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            text-decoration: none;
+            color: var(--text-color);
+            transition: all 0.2s ease;
+        }
+
+        .pagination a:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .pagination .current {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .no-users {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .no-users i {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <a href="{{ url_for('index') }}" class="sidebar-logo">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="UpaéFLIX">
+                UpaéFLIX Admin
+            </a>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-section-title">Principal</div>
+                <a href="{{ url_for('admin_dashboard') }}" class="nav-item">
+                    <i class="fas fa-tachometer-alt nav-icon"></i>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="{{ url_for('admin_upload') }}" class="nav-item">
+                    <i class="fas fa-cloud-upload-alt nav-icon"></i>
+                    <span class="nav-text">Upload de Conteúdo</span>
+                </a>
+                <a href="{{ url_for('admin_manage_content') }}" class="nav-item">
+                    <i class="fas fa-film nav-icon"></i>
+                    <span class="nav-text">Gerenciar Conteúdo</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Usuários</div>
+                <a href="{{ url_for('admin_manage_users') }}" class="nav-item active">
+                    <i class="fas fa-users nav-icon"></i>
+                    <span class="nav-text">Gerenciar Usuários</span>
+                </a>
+
+            </div>
+
+            <div class="nav-section">
+
+
+                <a href="{{ url_for('index') }}" class="nav-item">
+                    <i class="fas fa-home nav-icon"></i>
+                    <span class="nav-text">Voltar ao Site</span>
+                </a>
+
+            </div>
+        </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Gerenciar Usuários</h1>
+            <div class="page-actions">
+                <button onclick="refreshStats()" class="btn btn-secondary">
+                    <i class="fas fa-sync-alt"></i> Atualizar
+                </button>
+            </div>
+        </div>
+
+        <!-- ESTATÍSTICAS DOS USUÁRIOS -->
+        <div class="user-stats">
+            <div class="stat-card">
+                <div class="stat-number">{{ total_users }}</div>
+                <div class="stat-label">Total de Usuários</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ admin_users }}</div>
+                <div class="stat-label">Administradores</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ regular_users }}</div>
+                <div class="stat-label">Usuários Comuns</div>
+            </div>
+        </div>
+
+        <!-- BUSCA -->
+        <div class="search-section">
+            <form class="search-form" method="GET">
+                <input type="text"
+                       name="search"
+                       class="search-input"
+                       placeholder="Buscar por nome de usuário ou email..."
+                       value="{{ search }}"
+                       autocomplete="off">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Buscar
+                </button>
+                {% if search %}
+                <a href="{{ url_for('admin_manage_users') }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Limpar
+                </a>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- LISTA DE USUÁRIOS -->
+        <div class="users-table">
+            <div class="table-header">
+                <h2 class="table-title">
+                    {% if search %}
+                        Resultados da busca por "{{ search }}" ({{ users.total }} encontrados)
+                    {% else %}
+                        Todos os Usuários ({{ users.total }} total)
+                    {% endif %}
+                </h2>
+            </div>
+
+            {% if users.items %}
+            <table class="users-list">
+                <thead>
+                    <tr>
+                        <th>Usuário</th>
+                        <th>Status</th>
+                        <th>Cadastro</th>
+                        <th>Último Acesso</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users.items %}
+                    <tr>
+                        <td>
+                            <div class="user-info">
+                                <div class="user-avatar">
+                                    {{ user.username[0].upper() }}
+                                </div>
+                                <div class="user-details">
+                                    <h4>{{ user.username }}</h4>
+                                    <p class="user-email">{{ user.email }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if user.is_admin %}
+                                <span class="user-status status-admin">
+                                    <i class="fas fa-crown"></i>
+                                    Administrador
+                                </span>
+                            {% else %}
+                                <span class="user-status status-user">
+                                    <i class="fas fa-user"></i>
+                                    Usuário
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.created_at.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ user.created_at.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <div class="user-actions">
+                                <a href="{{ url_for('admin_edit_user', user_id=user.id) }}"
+                                   class="action-btn btn-edit"
+                                   title="Editar usuário">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% if user.id != current_user.id %}
+                                <button class="action-btn btn-toggle toggle-admin-btn"
+                                        data-user-id="{{ user.id }}"
+                                        data-username="{{ user.username }}"
+                                        data-is-admin="{{ user.is_admin }}"
+                                        title="{% if user.is_admin %}Remover admin{% else %}Tornar admin{% endif %}">
+                                    {% if user.is_admin %}
+                                        <i class="fas fa-user-minus"></i>
+                                    {% else %}
+                                        <i class="fas fa-user-plus"></i>
+                                    {% endif %}
+                                </button>
+                                <button class="action-btn btn-delete delete-user-btn"
+                                        data-user-id="{{ user.id }}"
+                                        data-username="{{ user.username }}"
+                                        title="Deletar usuário">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- PAGINAÇÃO -->
+            {% if users.pages > 1 %}
+            <div class="pagination">
+                {% if users.has_prev %}
+                    <a href="{{ url_for('admin_manage_users', page=users.prev_num, search=search) }}">
+                        <i class="fas fa-chevron-left"></i> Anterior
+                    </a>
+                {% endif %}
+
+                {% for page_num in users.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != users.page %}
+                            <a href="{{ url_for('admin_manage_users', page=page_num, search=search) }}">{{ page_num }}</a>
+                        {% else %}
+                            <span class="current">{{ page_num }}</span>
+                        {% endif %}
+                    {% else %}
+                        <span>...</span>
+                    {% endif %}
+                {% endfor %}
+
+                {% if users.has_next %}
+                    <a href="{{ url_for('admin_manage_users', page=users.next_num, search=search) }}">
+                        Próxima <i class="fas fa-chevron-right"></i>
+                    </a>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="no-users">
+                <i class="fas fa-users"></i>
+                <h3>Nenhum usuário encontrado</h3>
+                {% if search %}
+                <p>Não encontramos nenhum usuário com os termos "{{ search }}"</p>
+                <a href="{{ url_for('admin_manage_users') }}" class="btn btn-primary">Ver todos os usuários</a>
+                {% else %}
+                <p>Ainda não há usuários cadastrados no sistema.</p>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <!-- MODAL DE CONFIRMAÇÃO PARA DELETAR USUÁRIO -->
+    <div class="modal" id="deleteUserModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Confirmar Exclusão de Usuário</h2>
+                <button class="modal-close" id="closeDeleteUserModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #ef4444; margin-bottom: 15px;"></i>
+                </div>
+                <p class="modal-text">
+                    Tem certeza que deseja excluir permanentemente o usuário <strong id="deleteUserName"></strong>?
+                </p>
+                <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px; margin-top: 15px;">
+                    <p style="color: #dc2626; font-size: 14px; margin: 0;">
+                        <i class="fas fa-warning"></i>
+                        <strong>Atenção:</strong> Esta ação é irreversível e todos os dados do usuário serão perdidos permanentemente.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelDeleteUser">Cancelar</button>
+                <button class="btn btn-danger" id="confirmDeleteUser">Excluir Usuário</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIRMAÇÃO PARA ALTERAR STATUS ADMIN -->
+    <div class="modal" id="toggleAdminModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Alterar Status de Administrador</h2>
+                <button class="modal-close" id="closeToggleAdminModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-text" id="toggleAdminText"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelToggleAdmin">Cancelar</button>
+                <button class="btn btn-primary" id="confirmToggleAdmin">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast" id="toast">
+        <div class="toast-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="toast-content">
+            <div class="toast-title">Sucesso!</div>
+            <div class="toast-message" id="toastMessage"></div>
+        </div>
+        <button class="toast-close" id="toastClose">&times;</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // ELEMENTOS DOS MODAIS
+            const deleteUserModal = document.getElementById('deleteUserModal');
+            const toggleAdminModal = document.getElementById('toggleAdminModal');
+            const toast = document.getElementById('toast');
+
+            // BOTÕES E ELEMENTOS
+            const deleteUserBtns = document.querySelectorAll('.delete-user-btn');
+            const toggleAdminBtns = document.querySelectorAll('.toggle-admin-btn');
+
+            // VARIÁVEIS PARA ARMAZENAR DADOS TEMPORÁRIOS
+            let currentUserId = null;
+            let currentUsername = null;
+            let currentIsAdmin = null;
+
+            // ===== DELETAR USUÁRIO =====
+            deleteUserBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    currentUserId = parseInt(this.getAttribute('data-user-id'));
+                    currentUsername = this.getAttribute('data-username');
+
+                    document.getElementById('deleteUserName').textContent = currentUsername;
+                    deleteUserModal.classList.add('show');
+                });
+            });
+
+            // Confirmar exclusão de usuário
+            document.getElementById('confirmDeleteUser').addEventListener('click', function() {
+                if (!currentUserId) return;
+
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
+
+                fetch('/api/admin/user/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_id: currentUserId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    closeDeleteUserModal();
+
+                    if (data.success) {
+                        // Remover linha da tabela
+                        const userRow = document.querySelector(`button[data-user-id="${currentUserId}"]`).closest('tr');
+                        if (userRow) {
+                            userRow.remove();
+                        }
+
+                        showToast('success', 'Usuário Excluído!', data.message);
+
+                        // Atualizar contadores
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        showToast('error', 'Erro!', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    closeDeleteUserModal();
+                    showToast('error', 'Erro!', 'Ocorreu um erro ao tentar excluir o usuário.');
+                });
+            });
+
+            // ===== ALTERAR STATUS ADMIN =====
+            toggleAdminBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    currentUserId = parseInt(this.getAttribute('data-user-id'));
+                    currentUsername = this.getAttribute('data-username');
+                    currentIsAdmin = this.getAttribute('data-is-admin') === 'True';
+
+                    const action = currentIsAdmin ? 'remover privilégios de administrador' : 'tornar administrador';
+                    document.getElementById('toggleAdminText').innerHTML =
+                        `Deseja ${action} do usuário <strong>${currentUsername}</strong>?`;
+
+                    toggleAdminModal.classList.add('show');
+                });
+            });
+
+            // Confirmar alteração de status admin
+            document.getElementById('confirmToggleAdmin').addEventListener('click', function() {
+                if (!currentUserId) return;
+
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Alterando...';
+
+                fetch('/api/admin/user/toggle-admin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_id: currentUserId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    closeToggleAdminModal();
+
+                    if (data.success) {
+                        showToast('success', 'Status Alterado!', data.message);
+
+                        // Atualizar interface
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        showToast('error', 'Erro!', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    closeToggleAdminModal();
+                    showToast('error', 'Erro!', 'Ocorreu um erro ao tentar alterar o status.');
+                });
+            });
+
+            // ===== FUNÇÕES AUXILIARES =====
+            function closeDeleteUserModal() {
+                deleteUserModal.classList.remove('show');
+                currentUserId = null;
+                currentUsername = null;
+
+                const confirmBtn = document.getElementById('confirmDeleteUser');
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = 'Excluir Usuário';
+            }
+
+            function closeToggleAdminModal() {
+                toggleAdminModal.classList.remove('show');
+                currentUserId = null;
+                currentUsername = null;
+                currentIsAdmin = null;
+
+                const confirmBtn = document.getElementById('confirmToggleAdmin');
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = 'Confirmar';
+            }
+
+            function showToast(type, title, message) {
+                toast.className = 'toast';
+                toast.classList.add(`toast-${type}`, 'show');
+
+                const iconElement = toast.querySelector('.toast-icon i');
+                iconElement.className = 'fas';
+
+                if (type === 'success') {
+                    iconElement.classList.add('fa-check-circle');
+                } else if (type === 'error') {
+                    iconElement.classList.add('fa-times-circle');
+                } else if (type === 'warning') {
+                    iconElement.classList.add('fa-exclamation-triangle');
+                } else {
+                    iconElement.classList.add('fa-info-circle');
+                }
+
+                toast.querySelector('.toast-title').textContent = title;
+                document.getElementById('toastMessage').textContent = message;
+
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 5000);
+            }
+
+            // ===== EVENT LISTENERS PARA FECHAR MODAIS =====
+            document.getElementById('closeDeleteUserModal').addEventListener('click', closeDeleteUserModal);
+            document.getElementById('cancelDeleteUser').addEventListener('click', closeDeleteUserModal);
+
+            document.getElementById('closeToggleAdminModal').addEventListener('click', closeToggleAdminModal);
+            document.getElementById('cancelToggleAdmin').addEventListener('click', closeToggleAdminModal);
+
+            // Fechar toast
+            document.getElementById('toastClose').addEventListener('click', function() {
+                toast.classList.remove('show');
+            });
+
+            // Fechar modais clicando fora
+            window.addEventListener('click', function(event) {
+                if (event.target === deleteUserModal) {
+                    closeDeleteUserModal();
+                }
+                if (event.target === toggleAdminModal) {
+                    closeToggleAdminModal();
+                }
+            });
+        });
+
+        // Função para atualizar estatísticas
+        function refreshStats() {
+            const btn = document.querySelector('button[onclick="refreshStats()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Atualizando...';
+            btn.disabled = true;
+
+            fetch('/api/admin/users/stats')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Atualizar números nas estatísticas
+                    const statCards = document.querySelectorAll('.stat-number');
+                    statCards[0].textContent = data.total_users;
+                    statCards[1].textContent = data.admin_users;
+                    statCards[2].textContent = data.regular_users;
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao atualizar estatísticas:', error);
+            })
+            .finally(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>
