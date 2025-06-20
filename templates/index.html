@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UpaéFLIX - Sua Plataforma de Streaming</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}" type="image/x-icon">
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #131b2a;
+            --bg-card: #1a2437;
+            --accent-color: #ff3e6c;
+            --accent-hover: #ff0a47;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --border-radius: 8px;
+            --card-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            --nav-height: 70px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', Arial, sans-serif;
+        }
+
+        @font-face {
+            font-family: 'Poppins';
+            src: url('{{ url_for("static", filename="fonts/Poppins-Regular.ttf") }}') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Poppins';
+            src: url('{{ url_for("static", filename="fonts/Poppins-Bold.ttf") }}') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        a {
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: color 0.3s;
+        }
+
+        /* SCROLLBAR ESTILIZADA */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0a0e17;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-hover);
+        }
+
+        /* BOTÕES */
+        .btn {
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 62, 108, 0.3);
+        }
+
+        .btn-secondary {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* NAVBAR */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 5%;
+            height: var(--nav-height);
+            background-color: rgba(10, 14, 23, 0.95);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .navbar.scrolled {
+            height: 60px;
+            background-color: rgba(10, 14, 23, 0.98);
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--accent-color);
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-links li {
+            margin: 0 15px;
+        }
+
+        .nav-links a {
+            font-size: 1rem;
+            font-weight: 500;
+            position: relative;
+            padding: 5px 0;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent-color);
+        }
+
+        .nav-links a.active {
+            color: var(--accent-color);
+        }
+
+        .nav-links a.active::after,
+        .nav-links a:hover::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--accent-color);
+            transform-origin: center;
+            transform: scaleX(1);
+            transition: transform 0.3s ease;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--accent-color);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+        }
+
+        .search-container {
+            position: relative;
+            margin-right: 20px;
+        }
+
+        .search-input {
+            padding: 10px 40px 10px 15px;
+            width: 220px;
+            border-radius: 30px;
+            border: none;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .search-input:focus {
+            width: 280px;
+            background-color: rgba(255, 255, 255, 0.15);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(255, 62, 108, 0.3);
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            max-height: 350px;
+            overflow-y: auto;
+            box-shadow: var(--card-shadow);
+            z-index: 1001;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .search-result-item {
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .search-result-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .search-result-item img {
+            width: 50px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-right: 15px;
+        }
+
+        .search-result-info {
+            flex: 1;
+        }
+
+        .search-result-title {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .search-result-meta {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .search-results-empty {
+            padding: 15px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .user-menu {
+            position: relative;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            object-fit: cover;
+            border: 2px solid var(--accent-color);
+            transition: transform 0.3s;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 10px;
+            background-color: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            min-width: 180px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            transform: translateY(10px);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            z-index: 1001;
+        }
+
+        .user-menu:hover .user-dropdown {
+            transform: translateY(0);
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .user-dropdown-item {
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .user-dropdown-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .user-dropdown-item i {
+            font-size: 1.1rem;
+            color: var(--accent-color);
+        }
+
+        /* TOGGLE MENU MOBILE */
+        .menu-toggle {
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 25px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .menu-toggle span {
+            display: block;
+            width: 100%;
+            height: 2px;
+            background-color: var(--text-primary);
+            transition: all 0.3s;
+        }
+
+        /* HERO SECTION */
+        .hero {
+            position: relative;
+            height: 80vh;
+            margin-top: var(--nav-height);
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .hero-slider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .hero-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1s ease;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .hero-slide.active {
+            opacity: 1;
+        }
+
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(10, 14, 23, 0.9) 0%, rgba(10, 14, 23, 0.7) 50%, rgba(10, 14, 23, 0.4) 100%);
+        }
+
+        .hero-content {
+            max-width: 600px;
+            margin-left: 8%;
+            position: relative;
+            z-index: 1;
+            transform: translateY(-20px);
+        }
+
+        .hero-label {
+            display: inline-block;
+            background-color: var(--accent-color);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            font-weight: 800;
+        }
+
+        .hero-description {
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            color: var(--text-secondary);
+            max-width: 80%;
+        }
+
+        .hero-btns {
+            display: flex;
+            gap: 15px;
+        }
+
+        .hero-dots {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+
+        .hero-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .hero-dot.active {
+            background-color: var(--accent-color);
+            transform: scale(1.2);
+        }
+
+        /* SECTION */
+        .section {
+            padding: 50px 5%;
+        }
+
+        .section-header {
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -5px;
+            width: 40px;
+            height: 3px;
+            background-color: var(--accent-color);
+        }
+
+        .section-link {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            transition: color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .section-link:hover {
+            color: var(--accent-color);
+        }
+
+        /* CAROUSEL */
+        .carousel {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .carousel-container {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding: 10px 0;
+            scroll-behavior: smooth;
+            scrollbar-width: none;  /* Firefox */
+            -ms-overflow-style: none;  /* IE and Edge */
+        }
+
+        .carousel-container::-webkit-scrollbar {
+            display: none;  /* Chrome, Safari, Opera */
+        }
+
+        .carousel-controls {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            transform: translateY(-50%);
+            z-index: 5;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+
+        .carousel-arrow {
+            width: 40px;
+            height: 40px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: all 0.3s;
+            color: white;
+            font-size: 1.2rem;
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+
+        .carousel-arrow.right {
+            transform: translateX(20px);
+        }
+
+        .carousel:hover .carousel-arrow {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .carousel-arrow:hover {
+            background-color: var(--accent-color);
+        }
+
+        /* CARDS */
+        .media-card {
+            position: relative;
+            min-width: 200px;
+            width: 200px;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            transition: all 0.3s;
+            box-shadow: var(--card-shadow);
+            cursor: pointer;
+            background-color: var(--bg-card);
+        }
+
+        .media-card:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+            z-index: 10;
+        }
+
+        .media-card-img {
+            height: 280px;
+            width: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+
+        .media-card:hover .media-card-img {
+            transform: scale(1.1);
+        }
+
+        .media-card-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+            padding: 15px;
+            transform: translateY(100%);
+            transition: transform 0.3s;
+        }
+
+        .media-card:hover .media-card-overlay {
+            transform: translateY(0);
+        }
+
+        .media-card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .media-card-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .media-card-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .media-card-btn {
+            background-color: rgba(255, 255, 255, 0.1);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .media-card-btn:hover {
+            background-color: var(--accent-color);
+        }
+
+        .media-card-play {
+            background-color: var(--accent-color);
+            width: 40px;
+            height: 40px;
+        }
+
+        .media-card-play:hover {
+            background-color: var(--accent-hover);
+        }
+
+        /* PROGRESS BAR */
+        .progress-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: rgba(255, 255, 255, 0.2);
+            z-index: 2;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--accent-color);
+        }
+
+        /* CONTINUE WATCHING SECTION */
+        .continue-card {
+            position: relative;
+            min-width: 280px;
+            width: 280px;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            transition: all 0.3s;
+            box-shadow: var(--card-shadow);
+            cursor: pointer;
+            background-color: var(--bg-card);
+        }
+
+        .continue-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .continue-img {
+            height: 160px;
+            width: 100%;
+            object-fit: cover;
+        }
+
+        .continue-info {
+            padding: 15px;
+        }
+
+        .continue-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .continue-meta {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .continue-btns {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .continue-btn {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* CATEGORY GRID */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .category-card {
+            position: relative;
+            height: 120px;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s;
+        }
+
+        .category-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .category-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+
+        .category-card:hover .category-img {
+            transform: scale(1.1);
+        }
+
+        .category-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.7));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .category-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-align: center;
+            padding: 10px;
+        }
+
+        /* FEATURE GRID */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin: 50px 0;
+        }
+
+        .feature-item {
+            text-align: center;
+            padding: 30px;
+            background-color: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            transition: all 0.3s;
+            box-shadow: var(--card-shadow);
+        }
+
+        .feature-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+        }
+
+        .feature-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .feature-text {
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* FOOTER */
+        .footer {
+            background-color: var(--bg-secondary);
+            padding: 70px 5% 30px;
+            margin-top: 50px;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .footer-column h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .footer-column h3::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: -10px;
+            width: 30px;
+            height: 2px;
+            background-color: var(--accent-color);
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 15px;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent-color);
+            transform: translateX(5px);
+        }
+
+        .footer-links i {
+            font-size: 0.8rem;
+        }
+
+        .footer-social {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .social-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .social-icon:hover {
+            background-color: var(--accent-color);
+            transform: translateY(-5px);
+        }
+
+        .footer-bottom {
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* RESPONSIVO */
+        @media (max-width: 1200px) {
+            .hero-title {
+                font-size: 3rem;
+            }
+
+            .feature-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 992px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .hero-content {
+                max-width: 500px;
+            }
+
+            .search-input {
+                width: 180px;
+            }
+
+            .search-input:focus {
+                width: 220px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0 20px;
+            }
+
+            .menu-toggle {
+                display: flex;
+            }
+
+            .nav-links {
+                position: fixed;
+                top: var(--nav-height);
+                left: 0;
+                width: 100%;
+                flex-direction: column;
+                background-color: var(--bg-secondary);
+                padding: 20px;
+                transform: translateY(-100%);
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.3s;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            }
+
+            .nav-links.active {
+                transform: translateY(0);
+                opacity: 1;
+                visibility: visible;
+            }
+
+            .nav-links li {
+                margin: 15px 0;
+            }
+
+            .search-container {
+                margin-right: 15px;
+            }
+
+            .search-input {
+                width: 160px;
+            }
+
+            .search-input:focus {
+                width: 200px;
+            }
+
+            .hero {
+                height: 70vh;
+            }
+
+            .hero-content {
+                margin-left: 5%;
+                max-width: 90%;
+            }
+
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .hero-description {
+                font-size: 1rem;
+                max-width: 100%;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .search-container {
+                display: none;
+            }
+
+            .section {
+                padding: 30px 5%;
+            }
+
+            .hero-title {
+                font-size: 1.8rem;
+            }
+
+            .hero-btns {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+
+            .media-card {
+                min-width: 150px;
+                width: 150px;
+            }
+
+            .media-card-img {
+                height: 200px;
+            }
+
+            .continue-card {
+                min-width: 220px;
+                width: 220px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="menu-toggle" id="menuToggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+
+        <a href="{{ url_for('index') }}" class="logo">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="UpaéFLIX">
+            UpaéFLIX
+        </a>
+
+        <ul class="nav-links" id="navLinks">
+    <li><a href="{{ url_for('index') }}" class="active">Início</a></li>
+    <li><a href="#filmes">Filmes</a></li>
+    <li><a href="#series">Séries</a></li>
+    <li><a href="#categorias">Categorias</a></li>
+    {% if current_user.is_authenticated %}
+    <li><a href="{{ url_for('watchlist') }}">Minha Lista</a></li>
+    {% endif %}
+</ul>
+        <div class="nav-right">
+            <div class="search-container">
+                <form action="{{ url_for('search') }}" method="get">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Buscar filmes, séries..." name="q">
+                    <button type="submit" class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+                <div class="search-results" id="searchResults"></div>
+            </div>
+
+            {% if current_user.is_authenticated %}
+            <div class="user-menu">
+                <img src="{{ url_for('static', filename='img/' + current_user.profile_pic) }}" alt="Perfil" class="user-avatar">
+                <div class="user-dropdown">
+                    <div class="user-dropdown-item">
+                        <i class="fas fa-user"></i>
+                        <span>Perfil</span>
+                    </div>
+                    {% if current_user.is_admin %}
+                    <div class="user-dropdown-item">
+                        <i class="fas fa-cog"></i>
+                        <a href="{{ url_for('admin_dashboard') }}">Admin</a>
+                    </div>
+                    {% endif %}
+                    <div class="user-dropdown-item">
+                        <i class="fas fa-cog"></i>
+                        <span>Configurações</span>
+                    </div>
+                    <div class="user-dropdown-item">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <a href="{{ url_for('logout') }}">Sair</a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <a href="{{ url_for('login') }}" class="btn btn-primary">Entrar</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="hero">
+        <div class="hero-slider" id="heroSlider">
+            {% for movie in featured_movies[:3] %}
+            <div class="hero-slide {% if loop.index == 1 %}active{% endif %}" style="background-image: url('{{ url_for('static', filename=movie.poster_url) }}')"></div>
+            {% endfor %}
+        </div>
+        <div class="hero-overlay"></div>
+
+        <div class="hero-content">
+            <span class="hero-label">DESTAQUE</span>
+            <h1 class="hero-title" id="heroTitle">{{ featured_movies[0].title if featured_movies else "Bem-vindo ao UpaéFLIX" }}</h1>
+            <p class="hero-description" id="heroDesc">{{ featured_movies[0].description if featured_movies else "Sua plataforma de streaming personalizada com os melhores filmes e séries." }}</p>
+            <div class="hero-btns">
+                <a href="{{ url_for('watch_movie', movie_id=featured_movies[0].id) if featured_movies else '#' }}" class="btn btn-primary">
+                    <i class="fas fa-play"></i> Assistir
+                </a>
+                <button class="btn btn-secondary" id="addWatchlistBtn" data-id="{{ featured_movies[0].id if featured_movies else '' }}" data-type="movie">
+                    <i class="fas fa-plus"></i> Minha Lista
+                </button>
+            </div>
+        </div>
+
+        <div class="hero-dots" id="heroDots">
+            {% for movie in featured_movies[:3] %}
+            <div class="hero-dot {% if loop.index == 1 %}active{% endif %}" data-index="{{ loop.index0 }}"></div>
+            {% endfor %}
+        </div>
+    </section>
+ <section class="section">
+        <div class="section-header">
+            <h2 class="section-title">Navegue por Categorias</h2>
+        </div>
+
+        <div class="category-grid">
+            {% for category in categories %}
+            <a href="{{ url_for('category', category_slug=category.slug) }}" class="category-card">
+                <img src="{{ url_for('static', filename='img/categories/' ~ category.slug ~ '.jpg') }}" alt="{{ category.name }}" class="category-img">
+                <div class="category-overlay">
+                    <h3 class="category-name">{{ category.name }}</h3>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    <!-- CONTINUE ASSISTINDO (apenas para usuários logados) -->
+    {% if current_user.is_authenticated and continue_watching %}
+    <section class="section">
+        <div class="section-header">
+            <h2 class="section-title">Continue Assistindo</h2>
+            <a href="#" class="section-link">Ver tudo <i class="fas fa-chevron-right"></i></a>
+        </div>
+
+        <div class="carousel">
+            <div class="carousel-container" id="continueCarousel">
+                {% for item in continue_watching %}
+                <div class="continue-card">
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width: {{ item.progress }}%;"></div>
+                    </div>
+                    <img src="{{ url_for('static', filename=item.poster_url) }}" alt="{{ item.title }}" class="continue-img">
+                    <div class="continue-info">
+                        <h3 class="continue-title">{{ item.title }}</h3>
+                        <div class="continue-meta">
+                            <span>{{ 'Restam ' ~ ((100 - item.progress) / 100 * 2 * 60)|int ~ ' min' }}</span>
+                        </div>
+                        <div class="continue-btns">
+                            <a href="{{ url_for('watch_movie', movie_id=item.id) if item.type == 'movie' else url_for('watch_episode', episode_id=item.id) }}" class="btn btn-primary continue-btn">
+                                <i class="fas fa-play"></i> Continuar
+                            </a>
+                            <button class="btn btn-secondary continue-btn">
+                                <i class="fas fa-info-circle"></i> Info
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="carousel-controls">
+                <div class="carousel-arrow left" data-carousel="continueCarousel">
+                    <i class="fas fa-chevron-left"></i>
+                </div>
+                <div class="carousel-arrow right" data-carousel="continueCarousel">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- FILMES EM DESTAQUE -->
+    <section class="section">
+        <div class="section-header">
+            <h2 class="section-title">Filmes em Destaque</h2>
+            <a href="#" class="section-link">Ver tudo <i class="fas fa-chevron-right"></i></a>
+        </div>
+
+        <div class="carousel">
+            <div class="carousel-container" id="featuredMoviesCarousel">
+                {% for movie in featured_movies %}
+                <div class="media-card" data-id="{{ movie.id }}" data-type="movie">
+                    <img src="{{ url_for('static', filename=movie.poster_url) }}" alt="{{ movie.title }}" class="media-card-img">
+                    <div class="media-card-overlay">
+                        <h3 class="media-card-title">{{ movie.title }}</h3>
+                        <div class="media-card-meta">
+                            <span>{{ movie.release_year }}</span>
+                            <span>{{ movie.duration }} min</span>
+                        </div>
+                        <div class="media-card-actions">
+                            <a href="{{ url_for('watch_movie', movie_id=movie.id) }}" class="media-card-btn media-card-play">
+                                <i class="fas fa-play"></i>
+                            </a>
+                            <button class="media-card-btn add-watchlist" data-id="{{ movie.id }}" data-type="movie">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <a href="{{ url_for('movie_details', movie_id=movie.id) }}" class="media-card-btn">
+                                <i class="fas fa-info-circle"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="carousel-controls">
+                <div class="carousel-arrow left" data-carousel="featuredMoviesCarousel">
+                    <i class="fas fa-chevron-left"></i>
+                </div>
+                <div class="carousel-arrow right" data-carousel="featuredMoviesCarousel">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FILMES POPULARES -->
+    <section class="section">
+        <div class="section-header">
+            <h2 class="section-title">Filmes Populares</h2>
+            <a href="#" class="section-link">Ver tudo <i class="fas fa-chevron-right"></i></a>
+        </div>
+
+        <div class="carousel">
+            <div class="carousel-container" id="popularMoviesCarousel">
+                {% for movie in popular_movies %}
+                <div class="media-card" data-id="{{ movie.id }}" data-type="movie">
+                    <img src="{{ url_for('static', filename=movie.poster_url) }}" alt="{{ movie.title }}" class="media-card-img">
+                    <div class="media-card-overlay">
+                        <h3 class="media-card-title">{{ movie.title }}</h3>
+                        <div class="media-card-meta">
+                            <span>{{ movie.release_year }}</span>
+                            <span>{{ movie.duration }} min</span>
+                        </div>
+                        <div class="media-card-actions">
+                            <a href="{{ url_for('watch_movie', movie_id=movie.id) }}" class="media-card-btn media-card-play">
+                                <i class="fas fa-play"></i>
+                            </a>
+                            <button class="media-card-btn add-watchlist" data-id="{{ movie.id }}" data-type="movie">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <a href="{{ url_for('movie_details', movie_id=movie.id) }}" class="media-card-btn">
+                                <i class="fas fa-info-circle"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="carousel-controls">
+                <div class="carousel-arrow left" data-carousel="popularMoviesCarousel">
+                    <i class="fas fa-chevron-left"></i>
+                </div>
+                <div class="carousel-arrow right" data-carousel="popularMoviesCarousel">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SÉRIES POPULARES -->
+    <section class="section">
+        <div class="section-header">
+            <h2 class="section-title">Séries Populares</h2>
+            <a href="#" class="section-link">Ver tudo <i class="fas fa-chevron-right"></i></a>
+        </div>
+
+        <div class="carousel">
+            <div class="carousel-container" id="popularSeriesCarousel">
+                {% for series in recent_series %}
+                <div class="media-card" data-id="{{ series.id }}" data-type="series">
+                    <img src="{{ url_for('static', filename=series.poster_url) }}" alt="{{ series.title }}" class="media-card-img">
+                    <div class="media-card-overlay">
+                        <h3 class="media-card-title">{{ series.title }}</h3>
+                        <div class="media-card-meta">
+                            <span>{{ series.release_year }}</span>
+                            <span>{{ series.get_seasons()|length }} temporadas</span>
+                        </div>
+                        <div class="media-card-actions">
+                            <a href="{{ url_for('series_details', series_id=series.id) }}" class="media-card-btn media-card-play">
+                                <i class="fas fa-play"></i>
+                            </a>
+                            <button class="media-card-btn add-watchlist" data-id="{{ series.id }}" data-type="series">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <a href="{{ url_for('series_details', series_id=series.id) }}" class="media-card-btn">
+                                <i class="fas fa-info-circle"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="carousel-controls">
+                <div class="carousel-arrow left" data-carousel="popularSeriesCarousel">
+                    <i class="fas fa-chevron-left"></i>
+                </div>
+                <div class="carousel-arrow right" data-carousel="popularSeriesCarousel">
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- RECURSOS -->
+    <section class="section">
+        <div class="section-header">
+            <h2 class="section-title">Por Que Escolher o UpaéFLIX?</h2>
+        </div>
+
+        <div class="feature-grid">
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i class="fas fa-film"></i>
+                </div>
+                <h3 class="feature-title">Conteúdo de Qualidade</h3>
+                <p class="feature-text">Filmes e séries em alta qualidade, sem propagandas, para você curtir sem interrupções.</p>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <h3 class="feature-title">Streaming Rápido</h3>
+                <p class="feature-text">Tecnologia avançada para garantir streaming suave e rápido em qualquer dispositivo.</p>
+            </div>
+
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i class="fas fa-mobile-alt"></i>
+                </div>
+                <h3 class="feature-title">Assista em Qualquer Lugar</h3>
+                <p class="feature-text">Compatível com smartphones, tablets, smart TVs e navegadores web.</p>
+            </div>
+        </div>
+    </section>
+    <!-- FOOTER -->
+
+
+    <!-- SCRIPTS -->
+    <script>
+        // CARROSSEL
+        function setupCarousels() {
+            const carouselArrows = document.querySelectorAll('.carousel-arrow');
+
+            carouselArrows.forEach(arrow => {
+                arrow.addEventListener('click', () => {
+                    const carouselId = arrow.getAttribute('data-carousel');
+                    const carousel = document.getElementById(carouselId);
+                    const direction = arrow.classList.contains('left') ? -1 : 1;
+                    const scrollAmount = carousel.clientWidth * 0.7 * direction;
+
+                    carousel.scrollBy({
+                        left: scrollAmount,
+                        behavior: 'smooth'
+                    });
+                });
+            });
+        }
+
+        // HERO SLIDER
+        function setupHeroSlider() {
+            const slides = document.querySelectorAll('.hero-slide');
+            const dots = document.querySelectorAll('.hero-dot');
+            const title = document.getElementById('heroTitle');
+            const desc = document.getElementById('heroDesc');
+            const addBtn = document.getElementById('addWatchlistBtn');
+
+            if (!slides.length) return;
+
+            let currentSlide = 0;
+            const featuredMovies = [
+                {% for movie in featured_movies[:3] %}
+                {
+                    id: {{ movie.id }},
+                    title: "{{ movie.title }}",
+                    description: "{{ movie.description }}",
+                    type: "movie"
+                },
+                {% endfor %}
+            ];
+
+            function showSlide(index) {
+                // Hide all slides
+                slides.forEach(slide => {
+                    slide.classList.remove('active');
+                });
+
+                // Remove active class from all dots
+                dots.forEach(dot => {
+                    dot.classList.remove('active');
+                });
+
+                // Show the selected slide and dot
+                slides[index].classList.add('active');
+                dots[index].classList.add('active');
+
+                // Update content
+                title.textContent = featuredMovies[index].title;
+                desc.textContent = featuredMovies[index].description;
+                addBtn.setAttribute('data-id', featuredMovies[index].id);
+                addBtn.setAttribute('data-type', featuredMovies[index].type);
+            }
+
+            // Auto slide
+            setInterval(() => {
+                currentSlide = (currentSlide + 1) % slides.length;
+                showSlide(currentSlide);
+            }, 7000);
+
+            // Click on dots
+            dots.forEach((dot, index) => {
+                dot.addEventListener('click', () => {
+                    currentSlide = index;
+                    showSlide(currentSlide);
+                });
+            });
+        }
+
+        // BARRA DE BUSCA
+        function setupSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const searchResults = document.getElementById('searchResults');
+
+            if (!searchInput) return;
+
+            searchInput.addEventListener('input', () => {
+                const query = searchInput.value.trim();
+
+                if (query.length < 2) {
+                    searchResults.style.display = 'none';
+                    return;
+                }
+
+                // Fazer requisição AJAX para o endpoint de busca
+                fetch(`/api/search?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        searchResults.innerHTML = '';
+
+                        if (data.length === 0) {
+                            searchResults.innerHTML = '<div class="search-results-empty">Nenhum resultado encontrado</div>';
+                        } else {
+                            data.forEach(item => {
+                                const resultItem = document.createElement('div');
+                                resultItem.className = 'search-result-item';
+
+                                const link = document.createElement('a');
+                                link.href = item.type === 'movie'
+                                    ? `/movie/${item.id}`
+                                    : `/series/${item.id}`;
+                                link.style.display = 'flex';
+                                link.style.width = '100%';
+
+                                link.innerHTML = `
+                                    <img src="/static/${item.poster_url}" alt="${item.title}">
+                                    <div class="search-result-info">
+                                        <div class="search-result-title">${item.title}</div>
+                                        <div class="search-result-meta">
+                                            <span>${item.year}</span> |
+                                            <span>${item.type === 'movie' ? 'Filme' : 'Série'}</span>
+                                        </div>
+                                    </div>
+                                `;
+
+                                resultItem.appendChild(link);
+                                searchResults.appendChild(resultItem);
+                            });
+                        }
+
+                        searchResults.style.display = 'block';
+                    })
+                    .catch(error => {
+                        console.error('Erro na busca:', error);
+                    });
+            });
+
+            // Fechar resultados quando clicar fora
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                    searchResults.style.display = 'none';
+                }
+            });
+        }
+
+        // MENU MOBILE
+        function setupMobileMenu() {
+            const menuToggle = document.getElementById('menuToggle');
+            const navLinks = document.getElementById('navLinks');
+
+            if (!menuToggle) return;
+
+            menuToggle.addEventListener('click', () => {
+                navLinks.classList.toggle('active');
+
+                // Animar o ícone do menu
+                const spans = menuToggle.querySelectorAll('span');
+                spans.forEach(span => {
+                    span.classList.toggle('active');
+                });
+            });
+        }
+
+        // NAVBAR SCROLL
+        function setupNavbarScroll() {
+            const navbar = document.querySelector('.navbar');
+
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+            });
+        }
+
+        // WATCHLIST
+        function setupWatchlistButtons() {
+            const watchlistBtns = document.querySelectorAll('.add-watchlist');
+            const heroWatchlistBtn = document.getElementById('addWatchlistBtn');
+
+            function addToWatchlist(id, type) {
+                if (!id) return;
+
+                // Verificar se o usuário está logado
+                {% if not current_user.is_authenticated %}
+                    window.location.href = '/login';
+                    return;
+                {% endif %}
+
+                // Enviar requisição para adicionar à watchlist
+                fetch('/api/watchlist/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        [type === 'movie' ? 'movie_id' : 'series_id']: id
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                    } else {
+                        alert(data.message || 'Erro ao adicionar à sua lista');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert('Ocorreu um erro ao adicionar à sua lista');
+                });
+            }
+
+            watchlistBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = btn.getAttribute('data-id');
+                    const type = btn.getAttribute('data-type');
+                    addToWatchlist(id, type);
+                });
+            });
+
+            if (heroWatchlistBtn) {
+                heroWatchlistBtn.addEventListener('click', () => {
+                    const id = heroWatchlistBtn.getAttribute('data-id');
+                    const type = heroWatchlistBtn.getAttribute('data-type');
+                    addToWatchlist(id, type);
+                });
+            }
+        }
+
+        // INICIALIZAÇÃO
+        document.addEventListener('DOMContentLoaded', () => {
+            setupCarousels();
+            setupHeroSlider();
+            setupSearch();
+            setupMobileMenu();
+            setupNavbarScroll();
+            setupWatchlistButtons();
+        });
+    </script>
+</body>
+</html>

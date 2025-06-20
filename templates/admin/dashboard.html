@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo - UpaéFLIX</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}" type="image/x-icon">
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <a href="{{ url_for('index') }}" class="sidebar-logo">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="UpaéFLIX">
+                UpaéFLIX Admin
+            </a>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-section-title">Principal</div>
+                <a href="{{ url_for('admin_dashboard') }}" class="nav-item active">
+                    <i class="fas fa-tachometer-alt nav-icon"></i>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="{{ url_for('admin_upload') }}" class="nav-item">
+                    <i class="fas fa-cloud-upload-alt nav-icon"></i>
+                    <span class="nav-text">Upload de Conteúdo</span>
+                </a>
+                <a href="{{ url_for('admin_manage_content') }}" class="nav-item">
+                    <i class="fas fa-film nav-icon"></i>
+                    <span class="nav-text">Gerenciar Conteúdo</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Usuários</div>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-users nav-icon"></i>
+                    <span class="nav-text">Gerenciar Usuários</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-chart-line nav-icon"></i>
+                    <span class="nav-text">Estatísticas</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Configurações</div>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-cog nav-icon"></i>
+                    <span class="nav-text">Configurações</span>
+                </a>
+                <a href="{{ url_for('index') }}" class="nav-item">
+                    <i class="fas fa-home nav-icon"></i>
+                    <span class="nav-text">Voltar ao Site</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="nav-item">
+                    <i class="fas fa-sign-out-alt nav-icon"></i>
+                    <span class="nav-text">Sair</span>
+                </a>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Dashboard</h1>
+            <div class="page-actions">
+                <a href="{{ url_for('admin_upload') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Adicionar Conteúdo
+                </a>
+                <a href="{{ url_for('admin_manage_content') }}" class="btn btn-secondary">
+                    <i class="fas fa-cog"></i> Gerenciar
+                </a>
+            </div>
+        </div>
+
+        <!-- ESTATÍSTICAS -->
+        <div class="stats-grid">
+            <div class="stat-card primary">
+                <div class="stat-header">
+                    <div class="stat-title">Total de Filmes</div>
+                    <div class="stat-icon">
+                        <i class="fas fa-film"></i>
+                    </div>
+                </div>
+                <div class="stat-value">{{ total_movies }}</div>
+                <div class="stat-description">Filmes cadastrados na plataforma</div>
+            </div>
+
+            <div class="stat-card success">
+                <div class="stat-header">
+                    <div class="stat-title">Total de Séries</div>
+                    <div class="stat-icon">
+                        <i class="fas fa-tv"></i>
+                    </div>
+                </div>
+                <div class="stat-value">{{ total_series }}</div>
+                <div class="stat-description">Séries cadastradas na plataforma</div>
+            </div>
+
+            <div class="stat-card warning">
+                <div class="stat-header">
+                    <div class="stat-title">Total de Episódios</div>
+                    <div class="stat-icon">
+                        <i class="fas fa-list"></i>
+                    </div>
+                </div>
+                <div class="stat-value">{{ total_episodes }}</div>
+                <div class="stat-description">Episódios cadastrados na plataforma</div>
+            </div>
+
+            <div class="stat-card info">
+                <div class="stat-header">
+                    <div class="stat-title">Total de Usuários</div>
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+                <div class="stat-value">{{ total_users }}</div>
+                <div class="stat-description">Usuários registrados na plataforma</div>
+            </div>
+        </div>
+
+        <!-- ACESSO RÁPIDO -->
+        <h2 class="section-title" style="margin-bottom: 20px;">Acesso Rápido</h2>
+        <div class="quick-access">
+            <a href="{{ url_for('admin_upload') }}" class="quick-card">
+                <div class="quick-icon">
+                    <i class="fas fa-film"></i>
+                </div>
+                <h3 class="quick-title">Adicionar Filme</h3>
+                <p class="quick-text">Adicione um novo filme ao catálogo</p>
+            </a>
+
+            <a href="{{ url_for('admin_upload') }}" class="quick-card">
+                <div class="quick-icon">
+                    <i class="fas fa-tv"></i>
+                </div>
+                <h3 class="quick-title">Adicionar Série</h3>
+                <p class="quick-text">Adicione uma nova série ao catálogo</p>
+            </a>
+
+            <a href="{{ url_for('admin_upload') }}" class="quick-card">
+                <div class="quick-icon">
+                    <i class="fas fa-tags"></i>
+                </div>
+                <h3 class="quick-title">Gerenciar Categorias</h3>
+                <p class="quick-text">Crie e edite categorias</p>
+            </a>
+
+            <a href="{{ url_for('admin_manage_content') }}" class="quick-card">
+                <div class="quick-icon">
+                    <i class="fas fa-cog"></i>
+                </div>
+                <h3 class="quick-title">Gerenciar Conteúdo</h3>
+                <p class="quick-text">Edite e remova conteúdos</p>
+            </a>
+        </div>
+
+        <!-- CONTEÚDOS POPULARES -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Conteúdos Mais Populares</h2>
+                <span class="card-subtitle">Os filmes e séries mais assistidos da plataforma</span>
+            </div>
+            <div class="card-body">
+                <table class="content-table">
+                    <thead>
+                        <tr>
+                            <th>Título</th>
+                            <th>Tipo</th>
+                            <th>Visualizações</th>
+                            <th>Ano</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for movie in popular_movies %}
+                        <tr>
+                            <td>
+                                <div class="title-cell">
+                                    <img src="{{ url_for('static', filename=movie.poster_url) }}" alt="{{ movie.title }}" class="table-poster">
+                                    <span class="content-title">{{ movie.title }}</span>
+                                </div>
+                            </td>
+                            <td><span class="content-badge badge-movie">Filme</span></td>
+                            <td>{{ movie.views_count }}</td>
+                            <td>{{ movie.release_year }}</td>
+                            <td>
+                                <div class="table-actions">
+                                    <a href="{{ url_for('movie_details', movie_id=movie.id) }}" class="action-btn btn-view" title="Ver">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('admin_edit_movie', movie_id=movie.id) }}" class="action-btn btn-edit" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="action-btn btn-delete delete-btn" data-id="{{ movie.id }}" data-type="movie" data-title="{{ movie.title }}" title="Excluir">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                        {% for series in popular_series %}
+                        <tr>
+                            <td>
+                                <div class="title-cell">
+                                    <img src="{{ url_for('static', filename=series.poster_url) }}" alt="{{ series.title }}" class="table-poster">
+                                    <span class="content-title">{{ series.title }}</span>
+                                </div>
+                            </td>
+                            <td><span class="content-badge badge-series">Série</span></td>
+                            <td>{{ series.views_count }}</td>
+                            <td>{{ series.release_year }}</td>
+                            <td>
+                                <div class="table-actions">
+                                    <a href="{{ url_for('series_details', series_id=series.id) }}" class="action-btn btn-view" title="Ver">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('admin_edit_series', series_id=series.id) }}" class="action-btn btn-edit" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button class="action-btn btn-delete delete-btn" data-id="{{ series.id }}" data-type="series" data-title="{{ series.title }}" title="Excluir">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('admin_manage_content') }}" class="btn btn-secondary">Ver Todos</a>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO -->
+    <div class="modal" id="deleteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Confirmar Exclusão</h2>
+                <button class="modal-close" id="closeDeleteModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-text">Tem certeza que deseja excluir <span id="deleteItemName">este item</span>? Esta ação não pode ser desfeita.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelDelete">Cancelar</button>
+                <button class="btn btn-danger" id="confirmDelete">Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div class="toast" id="toast">
+        <div class="toast-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="toast-content">
+            <div class="toast-title">Sucesso!</div>
+            <div class="toast-message" id="toastMessage"></div>
+        </div>
+        <button class="toast-close" id="toastClose">&times;</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // MODAL DE EXCLUSÃO
+            const deleteModal = document.getElementById('deleteModal');
+            const deleteButtons = document.querySelectorAll('.delete-btn');
+            const closeDeleteModal = document.getElementById('closeDeleteModal');
+            const cancelDelete = document.getElementById('cancelDelete');
+            const confirmDelete = document.getElementById('confirmDelete');
+            const deleteItemName = document.getElementById('deleteItemName');
+
+            // TOAST
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastClose = document.getElementById('toastClose');
+
+            let itemToDelete = {
+                id: null,
+                type: null
+            };
+
+            // Abrir modal de exclusão
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    const type = this.getAttribute('data-type');
+                    const title = this.getAttribute('data-title');
+
+                    itemToDelete.id = id;
+                    itemToDelete.type = type;
+
+                    deleteItemName.textContent = `"${title}"`;
+                    deleteModal.classList.add('show');
+                });
+            });
+
+            // Fechar modal de exclusão
+            function closeDeleteModalFunc() {
+                deleteModal.classList.remove('show');
+                itemToDelete = { id: null, type: null };
+            }
+
+            closeDeleteModal.addEventListener('click', closeDeleteModalFunc);
+            cancelDelete.addEventListener('click', closeDeleteModalFunc);
+
+            // Confirmar exclusão
+            confirmDelete.addEventListener('click', function() {
+                if (!itemToDelete.id || !itemToDelete.type) return;
+
+                fetch('/api/admin/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        id: itemToDelete.id,
+                        type: itemToDelete.type
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    closeDeleteModalFunc();
+
+                    if (data.success) {
+                        // Encontrar e remover a linha da tabela
+                        const deleteBtn = document.querySelector(`.delete-btn[data-id="${itemToDelete.id}"][data-type="${itemToDelete.type}"]`);
+                        if (deleteBtn) {
+                            const row = deleteBtn.closest('tr');
+                            row.remove();
+                        }
+
+                        // Mostrar toast de sucesso
+                        showToast('success', 'Sucesso!', data.message);
+                    } else {
+                        // Mostrar toast de erro
+                        showToast('error', 'Erro!', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    closeDeleteModalFunc();
+                    showToast('error', 'Erro!', 'Ocorreu um erro ao tentar excluir o item.');
+                });
+            });
+
+            // Função para exibir toast
+            function showToast(type, title, message) {
+                toast.className = 'toast';
+                toast.classList.add(`toast-${type}`, 'show');
+
+                const iconElement = toast.querySelector('.toast-icon i');
+                iconElement.className = 'fas';
+
+                if (type === 'success') {
+                    iconElement.classList.add('fa-check-circle');
+                } else if (type === 'error') {
+                    iconElement.classList.add('fa-times-circle');
+                } else if (type === 'warning') {
+                    iconElement.classList.add('fa-exclamation-triangle');
+                } else {
+                    iconElement.classList.add('fa-info-circle');
+                }
+
+                toast.querySelector('.toast-title').textContent = title;
+                toastMessage.textContent = message;
+
+                // Esconder após 5 segundos
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 5000);
+            }
+
+            // Fechar toast
+            toastClose.addEventListener('click', function() {
+                toast.classList.remove('show');
+            });
+        });
+    </script>
+</body>
+</html>

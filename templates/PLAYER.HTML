@@ -1,0 +1,1844 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ media.title }} - UpaéFLIX</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}" type="image/x-icon">
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #131b2a;
+            --accent-color: #ff3e6c;
+            --accent-hover: #ff0a47;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --border-radius: 8px;
+            --player-control-bg: rgba(0, 0, 0, 0.7);
+            --player-control-hover: rgba(0, 0, 0, 0.9);
+            --player-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', 'Segoe UI', Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            background-color: #000;
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+            user-select: none; /* Ninguém selecionando texto aqui, rapá! kkkk */
+        }
+
+        /* PLAYER CONTAINER (A CAIXA TODA) */
+        .player-container {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+            transition: all 0.3s ease;
+        }
+
+        /* VÍDEO (O PROTAGONISTA) */
+        video {
+            max-width: 100%;
+            max-height: 100%;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: all 0.3s ease;
+            /* Clicar direto no vídeo já pausava/despausava, mas quem clica SÓ no vídeo? kkkk */
+        }
+
+        /* OVERLAY DO PLAYER (A CAMADA MÁGICA SEMI-TRANSPARENTE) */
+        .player-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 10%, transparent 40%, transparent 60%, rgba(0,0,0,0.5) 90%, rgba(0,0,0,0.9) 100%);
+            z-index: 10;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            /* pointer-events: none; por padrão pra não atrapalhar o video embaixo */
+            /* AGORA TEMOS UM EVENT LISTENER NELE! UHUL! */
+        }
+
+        .player-container:hover .player-overlay,
+        .player-overlay.show {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto; /* Quando aparece, ele pode receber cliques! */
+        }
+
+        /* CABEÇALHO DO PLAYER (TÍTULO E BOTÃO DE FECHAR) */
+        .player-header {
+            padding: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            pointer-events: none; /* Ignora cliques aqui, deixa pro overlay ou botões específicos */
+        }
+
+        .player-info {
+            max-width: 70%;
+            pointer-events: auto; /* Texto pode ser selecionado se precisar, mas user-select: none no body atrapalha kkkk */
+        }
+
+        .player-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+        }
+
+        .player-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .player-back-btn {
+            background-color: var(--player-control-bg);
+            border: none;
+            color: var(--text-primary);
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+            box-shadow: var(--player-shadow);
+            pointer-events: auto; /* ESSE botão PRECISA ser clicável */
+        }
+
+        .player-back-btn:hover {
+            background-color: var(--player-control-hover);
+            transform: scale(1.05);
+        }
+
+        /* CENTRO DO PLAYER (BOTÃO GIGANTE DE PLAY) */
+        .player-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 11; /* Pra ficar na frente do overlay quando visível */
+            pointer-events: none; /* Deixa o clique passar pro overlay/video */
+        }
+
+        .big-play-btn {
+            width: 90px;
+            height: 90px;
+            background-color: rgba(255, 62, 108, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            font-size: 2.5rem;
+            color: var(--text-primary);
+            margin: 0 20px;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: auto; /* Esse precisa ser clicável! */
+        }
+
+        .big-play-btn.show {
+            opacity: 1;
+            visibility: visible;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 62, 108, 0.7);
+            }
+            70% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 15px rgba(255, 62, 108, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 62, 108, 0);
+            }
+        }
+
+        .big-play-btn:hover {
+            background-color: var(--accent-color);
+            transform: scale(1.1);
+        }
+
+        /* Botões de skip no centro (Não vi no seu HTML, mas se tivesse...) */
+        .skip-btn {
+            width: 60px;
+            height: 60px;
+            background-color: var(--player-control-bg);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: auto; /* Clicável também */
+            z-index: 11;
+        }
+
+        .player-container:hover .skip-btn,
+        .player-overlay.show .skip-btn {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .skip-btn:hover {
+            background-color: var(--player-control-hover);
+            transform: scale(1.1);
+        }
+
+        /* RODAPÉ DO PLAYER (CONTROLES PRINCIPAIS) */
+        .player-footer {
+            padding: 30px;
+            pointer-events: none; /* Deixa o clique pros botões específicos */
+        }
+
+        .player-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            pointer-events: auto; /* A área dos controles precisa ser "clicável" pra pegar os botões */
+        }
+
+        .player-left-controls, .player-right-controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .player-btn {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 1.2rem;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            position: relative;
+            pointer-events: auto; /* ESSENCIAIS serem clicáveis */
+        }
+
+        .player-btn:hover {
+            color: var(--accent-color);
+        }
+
+        .player-play-btn {
+            background-color: var(--player-control-bg);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.5rem;
+        }
+
+        .player-play-btn:hover {
+            background-color: var(--accent-color);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 62, 108, 0.5);
+        }
+
+        .player-time {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+
+        .time-divider {
+            margin: 0 3px;
+            color: var(--text-secondary);
+        }
+
+        .player-volume {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+        }
+
+        .volume-slider-container {
+            width: 0;
+            height: 40px;
+            overflow: hidden;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .player-volume:hover .volume-slider-container {
+            width: 80px;
+        }
+
+        .player-volume-slider {
+            width: 80px;
+            height: 4px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer; /* Pra indicar que é clicável/arrastável */
+            pointer-events: auto; /* PRECISA ser interagível */
+        }
+
+        .player-volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .player-volume-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: var(--accent-hover);
+        }
+
+        /* BARRA DE PROGRESSO (A FAMOSA QUE TAVA DANDO PT kkkk) */
+        .player-progress-container {
+            width: 100%;
+            height: 6px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            position: relative;
+            cursor: pointer; /* Mãozinha pra mostrar que dá pra clicar */
+            overflow: hidden;
+            transition: height 0.2s ease;
+            pointer-events: auto; /* ESSA TEM QUE SER CLICÁVEL, PELAMOR! */
+        }
+
+        .player-progress-container:hover {
+            height: 8px; /* Fica mais gordinha pra clicar, que nem eu depois do churras kkkk */
+        }
+
+        .player-progress {
+            height: 100%;
+            background-color: var(--accent-color);
+            border-radius: 3px;
+            width: 0;
+            transition: width 0.1s linear;
+            position: relative;
+            pointer-events: none; /* A barrinha em si não recebe clique, quem recebe é o container dela */
+        }
+
+        .player-progress::after {
+            content: '';
+            position: absolute;
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+
+        .player-progress-container:hover .player-progress::after {
+            opacity: 1;
+        }
+
+        .player-buffer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.4);
+            border-radius: 3px;
+            width: 0;
+            transition: width 0.3s ease;
+            pointer-events: none; /* Só visual */
+        }
+
+        /* TOOLTIP DE TEMPO (Aquela legendinha chique) */
+        .time-tooltip {
+            position: absolute;
+            background-color: var(--player-control-bg);
+            color: var(--text-primary);
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            bottom: 15px;
+            transform: translateX(-50%);
+            display: none;
+            pointer-events: none; /* Só pra mostrar, não clica */
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+            z-index: 15; /* Bem na frente */
+        }
+
+        /* MENU DE VELOCIDADE (Pra ver em modo flash ou lesma kkkk) */
+        .speed-menu {
+            position: absolute;
+            bottom: 45px;
+            right: 0;
+            background-color: var(--player-control-bg);
+            border-radius: var(--border-radius);
+            width: 150px;
+            overflow: hidden;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            z-index: 100;
+            box-shadow: var(--player-shadow);
+            pointer-events: auto; /* Precisa ser clicável */
+        }
+
+        .speed-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .speed-menu-title {
+            padding: 10px 15px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            background-color: rgba(255, 255, 255, 0.05);
+            text-align: center;
+        }
+
+        .speed-option {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .speed-option:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .speed-option.active {
+            color: var(--accent-color);
+        }
+
+        .speed-option i {
+            font-size: 0.8rem;
+            opacity: 0;
+        }
+
+        .speed-option.active i {
+            opacity: 1;
+        }
+
+        /* CONFIGURAÇÕES DE QUALIDADE (Se um dia tiver kkkk) */
+        .quality-menu {
+            position: absolute;
+            bottom: 45px;
+            right: 0;
+            background-color: var(--player-control-bg);
+            border-radius: var(--border-radius);
+            width: 150px;
+            overflow: hidden;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            z-index: 100;
+            box-shadow: var(--player-shadow);
+            pointer-events: auto; /* Clicável também */
+        }
+
+        .quality-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .quality-menu-title {
+            padding: 10px 15px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            background-color: rgba(255, 255, 255, 0.05);
+            text-align: center;
+        }
+
+        .quality-option {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .quality-option:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .quality-option.active {
+            color: var(--accent-color);
+        }
+
+        .quality-option i {
+            font-size: 0.8rem;
+            opacity: 0;
+        }
+
+        .quality-option.active i {
+            opacity: 1;
+        }
+
+        /* LOADING (A rodinha da ansiedade) */
+        .player-loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            pointer-events: none; /* Não clica nisso não, pelo amor */
+        }
+
+        .player-loader.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loader-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* PRÓXIMO EPISÓDIO (O famoso "Netflix, tá aí ainda?") */
+        .next-episode {
+            position: absolute;
+            bottom: 100px;
+            right: 30px;
+            background-color: var(--player-control-bg);
+            border-radius: var(--border-radius);
+            width: 300px;
+            overflow: hidden;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(20px);
+            transition: all 0.3s ease;
+            z-index: 100;
+            box-shadow: var(--player-shadow);
+            pointer-events: auto; /* Precisa interagir com isso */
+        }
+
+        .next-episode.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+        }
+
+        .next-episode-header {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .next-episode-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .next-episode-time {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .next-episode-content {
+            padding: 15px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .next-episode-img {
+            width: 120px;
+            height: 67px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .next-episode-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .next-episode-info {
+            flex: 1;
+        }
+
+        .next-episode-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .next-episode-meta {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .next-episode-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .next-btn {
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: none;
+            flex: 1;
+            pointer-events: auto; /* Clicável, óbvio */
+        }
+
+        .next-btn-watch {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .next-btn-watch:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .next-btn-cancel {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .next-btn-cancel:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* TELA DE FIM DE REPRODUÇÃO (Acabou! Próximo! kkkk) */
+        .end-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            pointer-events: none; /* Deixa os botões serem clicáveis */
+        }
+
+        .end-screen.show {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto; /* Agora sim! */
+        }
+
+        .end-screen-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        .end-screen-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        .end-screen-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 0 20px;
+        }
+
+        .end-screen-btn {
+            padding: 12px 25px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: none;
+            pointer-events: auto; /* Botões clicáveis, claro! */
+        }
+
+        .end-screen-btn-primary {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .end-screen-btn-primary:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 62, 108, 0.3);
+        }
+
+        .end-screen-btn-secondary {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .end-screen-btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* RESPONSIVO (Pra funcionar até no tijolão kkkk) */
+        @media (max-width: 768px) {
+            .player-header {
+                padding: 20px;
+            }
+
+            .player-title {
+                font-size: 1.3rem;
+            }
+
+            .player-subtitle {
+                font-size: 0.9rem;
+            }
+
+            .player-footer {
+                padding: 20px;
+            }
+
+            .player-controls {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .player-left-controls, .player-right-controls {
+                gap: 10px;
+            }
+
+            .next-episode {
+                width: 90%; /* Ocupa mais espaço */
+                max-width: 300px; /* Mas não tudo */
+                bottom: 80px;
+                left: 50%;
+                transform: translateX(-50%); /* Centraliza */
+            }
+
+            .big-play-btn {
+                width: 70px;
+                height: 70px;
+                font-size: 2rem;
+            }
+
+            .skip-btn { /* Se existissem... */
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+
+            .end-screen-title {
+                font-size: 1.5rem;
+            }
+
+            .end-screen-subtitle {
+                font-size: 1rem;
+            }
+
+            .end-screen-buttons {
+                flex-direction: column;
+                width: 100%;
+                max-width: 300px;
+            }
+
+            /* Esconder o tempo no celular pra não ficar apertado, quem liga pra segundos? kkkk */
+            /* .player-time {
+                display: none;
+            } */
+            /* Descomentei pq pode ser útil ainda, vai que... */
+        }
+    </style>
+</head>
+<body>
+    <div class="player-container" id="playerContainer">
+        <div class="player-loader" id="playerLoader">
+            <div class="loader-spinner"></div>
+        </div>
+
+        <video id="videoPlayer" preload="auto">
+            <source src="{{ url_for('static', filename=media.video_path) }}" type="video/mp4">
+            Ihhh, seu navegador deu ruim! Não roda o vídeo. Kkkkkk!
+        </video>
+
+        <div class="player-center">
+            <button class="big-play-btn" id="bigPlayBtn">
+                <i class="fas fa-play"></i>
+            </button>
+
+            </div>
+
+        <div class="player-overlay" id="playerOverlay">
+            <div class="player-header">
+                <div class="player-info">
+                    <h1 class="player-title">{{ media.title }}</h1>
+                    {% if media_type == 'episode' %}
+                    <div class="player-subtitle">{{ series.title }} | T{{ media.season }} E{{ media.episode_number }}</div>
+                    {% endif %}
+                </div>
+
+                <a href="{{ url_for('movie_details', movie_id=media.id) if media_type == 'movie' else url_for('series_details', series_id=series.id) }}" class="player-back-btn" title="Voltar">
+                    <i class="fas fa-times"></i> </a>
+            </div>
+
+            <div class="player-footer">
+                <div class="player-controls">
+                    <div class="player-left-controls">
+                        <button class="player-btn player-play-btn" id="playPauseBtn" title="Play/Pause">
+                            <i class="fas fa-play"></i>
+                        </button>
+
+                        {% if next_media %}
+                        <button class="player-btn" id="nextEpisodeBtn" title="Próximo episódio">
+                            <i class="fas fa-step-forward"></i>
+                        </button>
+                        {% endif %}
+
+                        <button class="player-btn" id="rewind10Btn" title="Voltar 10 segundos">
+                            <i class="fas fa-undo-alt"></i> </button>
+
+                        <button class="player-btn" id="forward10Btn" title="Avançar 10 segundos">
+                            <i class="fas fa-redo-alt"></i> </button>
+
+                        <div class="player-volume">
+                            <button class="player-btn" id="muteBtn" title="Mudo">
+                                <i class="fas fa-volume-up"></i>
+                            </button>
+                            <div class="volume-slider-container">
+                                <input type="range" min="0" max="1" step="0.05" value="1" class="player-volume-slider" id="volumeSlider"> </div>
+                        </div>
+
+                        <div class="player-time">
+                            <span id="currentTime">0:00</span>
+                            <span class="time-divider">/</span>
+                            <span id="duration">0:00</span>
+                        </div>
+                    </div>
+
+                    <div class="player-right-controls">
+                        <div class="player-btn" id="speedBtn" title="Velocidade de reprodução">
+                            <i class="fas fa-tachometer-alt"></i>
+
+                            <div class="speed-menu" id="speedMenu">
+                                <div class="speed-menu-title">Velocidade</div>
+                                <div class="speed-option" data-speed="0.5">0.5x <i class="fas fa-check"></i></div>
+                                <div class="speed-option" data-speed="0.75">0.75x <i class="fas fa-check"></i></div>
+                                <div class="speed-option active" data-speed="1">Normal <i class="fas fa-check"></i></div>
+                                <div class="speed-option" data-speed="1.25">1.25x <i class="fas fa-check"></i></div>
+                                <div class="speed-option" data-speed="1.5">1.5x <i class="fas fa-check"></i></div>
+                                <div class="speed-option" data-speed="2">2x <i class="fas fa-check"></i></div>
+                            </div>
+                        </div>
+
+                        <div class="player-btn" id="qualityBtn" title="Qualidade (Faz de conta kkk)">
+                            <i class="fas fa-cog"></i>
+
+                            <div class="quality-menu" id="qualityMenu">
+                                <div class="quality-menu-title">Qualidade</div>
+                                <div class="quality-option active" data-quality="auto">Auto <i class="fas fa-check"></i></div>
+                                <div class="quality-option" data-quality="1080p">1080p <i class="fas fa-check"></i></div>
+                                <div class="quality-option" data-quality="720p">720p <i class="fas fa-check"></i></div>
+                                <div class="quality-option" data-quality="480p">480p <i class="fas fa-check"></i></div>
+                                <div class="quality-option" data-quality="360p">360p <i class="fas fa-check"></i></div>
+                            </div>
+                        </div>
+
+                        <button class="player-btn" id="fullscreenBtn" title="Tela cheia">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="player-progress-container" id="progressContainer">
+                    <div class="player-buffer" id="bufferBar"></div>
+                    <div class="player-progress" id="progressBar"></div>
+                    <div class="time-tooltip" id="timeTooltip">0:00</div>
+                </div>
+            </div>
+        </div>
+
+        {% if next_media %}
+        <div class="next-episode" id="nextEpisodeOverlay">
+            <div class="next-episode-header">
+                <div class="next-episode-title">Próximo Episódio</div>
+                <div class="next-episode-time">Em <span id="nextEpisodeCounter">10</span>s... (Corre!)</div>
+            </div>
+            <div class="next-episode-content">
+                <div class="next-episode-img">
+                    <img src="{{ url_for('static', filename=next_media.thumbnail_url or series.poster_url) }}" alt="Próximo episódio">
+                </div>
+                <div class="next-episode-info">
+                    <div class="next-episode-name">{{ next_media.title }}</div>
+                    <div class="next-episode-meta">T{{ next_media.season }} E{{ next_media.episode_number }} • {{ next_media.duration }} min</div>
+                    <div class="next-episode-actions">
+                        <a href="{{ url_for('watch_episode', episode_id=next_media.id) }}" class="next-btn next-btn-watch">
+                            <i class="fas fa-play-circle"></i> Bora!
+                        </a>
+                        <button class="next-btn next-btn-cancel" id="cancelNextEpisode">
+                            <i class="fas fa-times-circle"></i> Calmaê!
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="end-screen" id="endScreen">
+            <h2 class="end-screen-title">GG! Você zerou {{ media.title }}!</h2>
+
+            {% if media_type == 'episode' and next_media %}
+            <p class="end-screen-subtitle">Bora maratonar {{ series.title }} ou vai arregar? Kkkk</p>
+            <div class="end-screen-buttons">
+                <a href="{{ url_for('watch_episode', episode_id=next_media.id) }}" class="end-screen-btn end-screen-btn-primary">
+                    <i class="fas fa-play"></i> Próximo Ep!
+                </a>
+                <a href="{{ url_for('series_details', series_id=series.id) }}" class="end-screen-btn end-screen-btn-secondary">
+                    <i class="fas fa-list"></i> Ver a Lista Toda
+                </a>
+            </div>
+            {% elif media_type == 'movie' %}
+            <p class="end-screen-subtitle">Acabou o filme, quer replay ou partiu outra coisa?</p>
+            <div class="end-screen-buttons">
+                <button class="end-screen-btn end-screen-btn-primary" id="replayBtn">
+                    <i class="fas fa-redo"></i> De Novo! De Novo!
+                </button>
+                <a href="{{ url_for('index') }}" class="end-screen-btn end-screen-btn-secondary">
+                    <i class="fas fa-home"></i> Voltar pro Início (Preguiça)
+                </a>
+            </div>
+            {% else %}
+            <p class="end-screen-subtitle">Fim da série! Parabéns, guerreiro(a)!</p>
+            <div class="end-screen-buttons">
+                <a href="{{ url_for('series_details', series_id=series.id) }}" class="end-screen-btn end-screen-btn-primary">
+                    <i class="fas fa-list"></i> Ver Episódios (Saudade já?)
+                </a>
+                <a href="{{ url_for('index') }}" class="end-screen-btn end-screen-btn-secondary">
+                    <i class="fas fa-home"></i> Página Inicial (Vida que segue)
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // === PEGANDO OS ELEMENTOS DA PÁGINA (Tipo Pokémon kkkk) ===
+            const playerContainer = document.getElementById('playerContainer');
+            const video = document.getElementById('videoPlayer');
+            const playerOverlay = document.getElementById('playerOverlay'); // A CAMADA MÁGICA!
+            const bigPlayBtn = document.getElementById('bigPlayBtn');
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            // const rewindBtn = document.getElementById('rewindBtn'); // Se tivesse o botão central
+            // const forwardBtn = document.getElementById('forwardBtn'); // Se tivesse o botão central
+            const rewind10Btn = document.getElementById('rewind10Btn');
+            const forward10Btn = document.getElementById('forward10Btn');
+            const muteBtn = document.getElementById('muteBtn');
+            const volumeSlider = document.getElementById('volumeSlider');
+            const fullscreenBtn = document.getElementById('fullscreenBtn');
+            const progressContainer = document.getElementById('progressContainer'); // A BARRA PROBLEMÁTICA!
+            const progressBar = document.getElementById('progressBar');
+            const bufferBar = document.getElementById('bufferBar');
+            const timeTooltip = document.getElementById('timeTooltip');
+            const currentTimeElement = document.getElementById('currentTime');
+            const durationElement = document.getElementById('duration');
+            const playerLoader = document.getElementById('playerLoader');
+            const speedBtn = document.getElementById('speedBtn');
+            const speedMenu = document.getElementById('speedMenu');
+            const speedOptions = document.querySelectorAll('.speed-option');
+            const qualityBtn = document.getElementById('qualityBtn');
+            const qualityMenu = document.getElementById('qualityMenu');
+            const qualityOptions = document.querySelectorAll('.quality-option');
+            const endScreen = document.getElementById('endScreen');
+            const replayBtn = document.getElementById('replayBtn'); // Pode ser null se não for filme
+
+            {% if next_media %}
+            const nextEpisodeBtn = document.getElementById('nextEpisodeBtn');
+            const nextEpisodeOverlay = document.getElementById('nextEpisodeOverlay');
+            const nextEpisodeCounter = document.getElementById('nextEpisodeCounter');
+            const cancelNextEpisode = document.getElementById('cancelNextEpisode');
+            {% endif %}
+
+            // === VARIÁVEIS DE GUERRA (kkkkk) ===
+            let isPlaying = false; // Tá tocando ou não? Eis a questão!
+            let hideTimeout; // Pra esconder os controles depois de um tempo
+            let mouseStillTimeout; // Pra saber se o mouse parou de fofocar na tela
+            let isMouseMoving = false; // O mouse tá dançando?
+            let isUserInteracting = false; // O usuário tá com o mouse em cima do player?
+            let lastMouseMoveTime = Date.now(); // Quando foi a última vez que o mouse se mexeu?
+            let nextEpisodeTimeout; // Pra pular pro próximo ep automaticamente
+            let nextEpisodeInterval; // Pra contar os segundos pro próximo ep
+            let isEnd = false; // Já chegou no final do vídeo?
+
+            // === INICIALIZAÇÃO DO PLAYER (Quando a mágica começa) ===
+            video.addEventListener('loadedmetadata', function() {
+                console.log("Metadados carregados, duração: ", video.duration); // Debug pra ver se carregou
+                playerLoader.classList.remove('show'); // Tira a rodinha chata
+
+                // Tenta restaurar o tempo de onde parou (se tiver)
+                const startTime = {{ timestamp or 0 }};
+                if (startTime > 0 && startTime < video.duration - 5) { // -5 pra não começar no finalzinho kkkk
+                    console.log("Restaurando para: ", startTime);
+                    video.currentTime = startTime;
+                } else {
+                    console.log("Começando do início ou timestamp inválido/finalizado.");
+                }
+
+                updateDuration();
+                updateBufferBar();
+                // Não mostra controles ou botão de play ainda, espera o 'canplay' pra tentar autoplay
+                // showControls();
+                // bigPlayBtn.classList.add('show');
+            });
+
+            // EVENTOS DE CARREGAMENTO DO VÍDEO
+            video.addEventListener('waiting', function() {
+                playerLoader.classList.add('show'); // Mostra a rodinha quando tá pensando
+            });
+
+            video.addEventListener('canplay', function() {
+                console.log("Video 'canplay'. Tentando autoplay...");
+                playerLoader.classList.remove('show'); // Tira a rodinha
+                updateBufferBar(); // Garante que o buffer inicial apareça
+
+                // Tenta dar play automaticamente (Navegadores são chatos com isso kkkk)
+                 if (!isPlaying) { // Só tenta se não estiver tocando
+                    const playPromise = video.play();
+                    if (playPromise !== undefined) {
+                        playPromise.then(_ => {
+                            // Autoplay funcionou!
+                            console.log("Autoplay com sucesso!");
+                            isPlaying = true;
+                            updatePlayPauseIcons();
+                            hideControlsAfterDelay(); // Esconde controles depois de um tempo
+                        }).catch(error => {
+                            // Autoplay bloqueado, mostra o botão grande de play
+                            console.log("Autoplay bloqueado pelo navegador.", error);
+                            if (!isPlaying) { // Garante que o botão só aparece se realmente não tocou
+                                bigPlayBtn.classList.add('show');
+                                showControls(); // Mostra os controles tbm pq o vídeo tá pausado
+                            }
+                        });
+                    } else {
+                         // Caso raro onde play() não retorna promise
+                         if (!video.paused) {
+                             isPlaying = true;
+                             updatePlayPauseIcons();
+                             hideControlsAfterDelay();
+                         } else {
+                            bigPlayBtn.classList.add('show');
+                            showControls();
+                         }
+                    }
+                 }
+            });
+
+            video.addEventListener('playing', function() {
+                console.log("Video 'playing'.");
+                playerLoader.classList.remove('show');
+                bigPlayBtn.classList.remove('show'); // Esconde o botão grande
+                isPlaying = true;
+                updatePlayPauseIcons();
+
+                // Só esconde se o mouse não estiver se mexendo loucamente
+                if (!isUserInteracting && !isMouseMoving) {
+                    hideControlsAfterDelay();
+                }
+            });
+
+            video.addEventListener('pause', function() {
+                console.log("Video 'pause'.");
+                 isPlaying = false;
+                 updatePlayPauseIcons();
+                 showControls(); // Mostra controles quando pausa
+                 clearTimeout(hideTimeout); // Cancela o esconderijo
+                 bigPlayBtn.classList.remove('show'); // Normalmente esconde, mas pode mostrar se for o estado inicial
+                 // Se pausou e tá no início, mostra o botão grande
+                 if (video.currentTime < 1) {
+                     bigPlayBtn.classList.add('show');
+                 }
+            });
+
+            // ATUALIZAR BUFFER (A barrinha cinza)
+            video.addEventListener('progress', updateBufferBar);
+
+            function updateBufferBar() {
+                try {
+                    if (video.buffered.length > 0 && video.duration > 0) {
+                        // Pega o fim do último bloco bufferizado
+                        const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+                        const duration = video.duration;
+                        const bufferedPercent = (bufferedEnd / duration) * 100;
+                        bufferBar.style.width = Math.min(bufferedPercent, 100) + '%'; // Garante não passar de 100%
+                        // console.log("Buffer atualizado:", bufferedPercent.toFixed(1) + "%");
+                    } else {
+                         bufferBar.style.width = '0%';
+                    }
+                } catch (error) {
+                    console.error("Erro ao atualizar buffer:", error);
+                    bufferBar.style.width = '0%'; // Reseta em caso de erro
+                }
+            }
+
+            // PLAY/PAUSE (A função mais importante kkkk)
+            function togglePlay() {
+                // Se a tela final estiver aparecendo, replay!
+                if (isEnd && endScreen.classList.contains('show')) {
+                    console.log("Replay a partir da tela final.");
+                    endScreen.classList.remove('show');
+                    isEnd = false;
+                    video.currentTime = 0;
+                    playVideo(); // Chama a função de play
+                    return; // Sai daqui pra não pausar logo em seguida kkk
+                }
+
+                // Se o vídeo tá pausado ou acabou, dá play! Senão, pausa!
+                if (video.paused || video.ended) {
+                    console.log("Chamando playVideo()");
+                    playVideo();
+                } else {
+                    console.log("Chamando pauseVideo()");
+                    pauseVideo();
+                }
+            }
+
+            function playVideo() {
+                if(isEnd) { // Se estava no fim, reseta
+                    video.currentTime = 0;
+                    isEnd = false;
+                    endScreen.classList.remove('show');
+                }
+                const playPromise = video.play();
+                 if (playPromise !== undefined) {
+                    playPromise.then(_ => { /* Sucesso */ }).catch(error => {
+                        console.error("Erro ao tentar dar play:", error);
+                        // Talvez mostrar uma mensagem pro usuário?
+                        bigPlayBtn.classList.add('show'); // Mostra o botão pra ele clicar
+                    });
+                 }
+            }
+
+            function pauseVideo() {
+                video.pause();
+            }
+
+            function updatePlayPauseIcons() {
+                 // Atualiza os ícones dos botões (play/pause)
+                if (isPlaying) {
+                    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                    playPauseBtn.setAttribute('title', 'Pausar');
+                    bigPlayBtn.innerHTML = '<i class="fas fa-pause"></i>'; // O botão grande também muda
+                    bigPlayBtn.setAttribute('title', 'Pausar');
+                } else {
+                    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    playPauseBtn.setAttribute('title', 'Play');
+                    bigPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
+                    bigPlayBtn.setAttribute('title', 'Play');
+                }
+            }
+
+            // AVANÇAR/VOLTAR (Viagem no tempo de 10s)
+            function skipBackward() {
+                const newTime = Math.max(video.currentTime - 10, 0);
+                console.log(`Voltando 10s para: ${newTime.toFixed(1)}`);
+                video.currentTime = newTime;
+                updateProgressBar();
+                showSkipEffect('backward'); // Pisca rápido pra indicar
+            }
+
+            function skipForward() {
+                const newTime = Math.min(video.currentTime + 10, video.duration);
+                console.log(`Avançando 10s para: ${newTime.toFixed(1)}`);
+                video.currentTime = newTime;
+                updateProgressBar();
+                 showSkipEffect('forward'); // Pisca rápido pra indicar
+            }
+
+            function showSkipEffect(direction) {
+                // Efeito simples: pisca os controles rapidamente
+                playerOverlay.classList.add('show');
+                setTimeout(() => {
+                    if (isPlaying && !isUserInteracting) { // Só esconde se estiver tocando e mouse fora
+                         hideControls();
+                    }
+                }, 150); // Mostra por pouco tempo
+            }
+
+            // CONTROLE DE VOLUME (Abaixa que a mãe tá dormindo kkkk)
+            function toggleMute() {
+                video.muted = !video.muted;
+                console.log("Mudo:", video.muted);
+                // Se desmutou e o volume era zero, coloca um pouquinho
+                if (!video.muted && video.volume === 0) {
+                     video.volume = 0.1; // Coloca 10%
+                     volumeSlider.value = 0.1;
+                }
+                // Se mutou, atualiza o slider pra zero visualmente, mas guarda o volume anterior (o navegador faz isso)
+                if (video.muted) {
+                    volumeSlider.value = 0; // Reflete no slider
+                } else {
+                    volumeSlider.value = video.volume; // Volta pro valor real
+                }
+                updateVolumeIcon();
+            }
+
+            function updateVolume() {
+                const newVolume = parseFloat(volumeSlider.value);
+                video.volume = newVolume;
+                video.muted = newVolume === 0; // Muta se o volume for zero
+                console.log("Volume alterado para:", newVolume);
+                updateVolumeIcon();
+            }
+
+            function updateVolumeIcon() {
+                if (video.muted || video.volume === 0) {
+                    muteBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                    muteBtn.setAttribute('title', 'Ativar Som');
+                } else if (video.volume <= 0.5) {
+                    muteBtn.innerHTML = '<i class="fas fa-volume-down"></i>';
+                    muteBtn.setAttribute('title', 'Mudo');
+                } else {
+                    muteBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+                    muteBtn.setAttribute('title', 'Mudo');
+                }
+            }
+             // Inicializa o ícone e slider baseado no estado inicial
+             updateVolumeIcon();
+             volumeSlider.value = video.volume;
+
+            // TELA CHEIA (Modo cinema em casa!)
+            function toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    console.log("Entrando em Tela Cheia");
+                    playerContainer.requestFullscreen().catch(err => {
+                        alert(`Erro ao entrar em tela cheia: ${err.message} (${err.name}). Talvez seu navegador não deixe? kkkk`);
+                    });
+                } else {
+                    console.log("Saindo da Tela Cheia");
+                    document.exitFullscreen();
+                }
+            }
+
+            // Atualiza o ícone do botão quando o estado da tela cheia muda
+            document.addEventListener('fullscreenchange', updateFullscreenButton);
+            function updateFullscreenButton() {
+                if (document.fullscreenElement) {
+                    fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                    fullscreenBtn.setAttribute('title', 'Sair da Tela Cheia');
+                    playerContainer.classList.add('fullscreen-mode'); // Adiciona classe pro CSS se precisar
+                } else {
+                    fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                    fullscreenBtn.setAttribute('title', 'Tela Cheia');
+                    playerContainer.classList.remove('fullscreen-mode');
+                }
+            }
+
+            // BARRA DE PROGRESSO (A que te deu dor de cabeça kkkk)
+            function updateProgressBar() {
+                if (video.duration > 0) {
+                    const percent = (video.currentTime / video.duration) * 100;
+                    progressBar.style.width = percent + '%';
+                    currentTimeElement.textContent = formatTime(video.currentTime);
+
+                    // Atualizar servidor a cada X segundos (não a cada frame!)
+                    // Usa um flag pra não mandar toda hora no mesmo segundo
+                    const currentWholeSecond = Math.floor(video.currentTime);
+                    if (currentWholeSecond % 30 === 0 && currentWholeSecond !== lastUpdateTime && !video.paused) {
+                        console.log(`Atualizando servidor - Tempo: ${currentWholeSecond}s`);
+                        updateServerProgress();
+                        lastUpdateTime = currentWholeSecond; // Marca que já atualizou nesse segundo
+                    }
+                } else {
+                    // Se duração for 0, reseta
+                     progressBar.style.width = '0%';
+                     currentTimeElement.textContent = formatTime(0);
+                }
+            }
+            let lastUpdateTime = -1; // Pra controlar a atualização do servidor
+
+            function updateServerProgress(completed = false) {
+                 // Só atualiza se tiver um tempo válido e não for NaN
+                 if (!isNaN(video.currentTime) && video.currentTime >= 0) {
+                    const currentTimeToSend = Math.floor(video.currentTime); // Envia segundos inteiros
+                    console.log(`Enviando para servidor: Tempo ${currentTimeToSend}s, Completo: ${completed}`);
+
+                    // Monta o corpo da requisição
+                    const bodyData = {
+                        timestamp: currentTimeToSend,
+                        completed: completed
+                    };
+                    {% if media_type == 'movie' %}
+                        bodyData.movie_id = {{ media.id }};
+                    {% elif media_type == 'episode' %}
+                         bodyData.episode_id = {{ media.id }};
+                    {% else %}
+                         console.error("Tipo de mídia desconhecido para salvar progresso.");
+                         return; // Não envia se não souber o que é
+                    {% endif %}
+
+                    fetch('/api/playback/update', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            // Adicionar 'X-CSRFToken': getCookie('csrftoken') se usar CSRF no Flask/Django
+                        },
+                        body: JSON.stringify(bodyData)
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            console.error('Erro ao atualizar progresso no servidor:', response.status, response.statusText);
+                        } else {
+                            console.log("Progresso atualizado no servidor com sucesso.");
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro de rede ao atualizar progresso:', error);
+                    });
+                } else {
+                     console.warn("Tempo de vídeo inválido, não atualizando servidor.");
+                }
+            }
+
+            // === A FUNÇÃO DE SEEK (Clicar na barra de progresso) ===
+            // Essa função JÁ EXISTIA e DEVERIA funcionar. Mistéééério... kkkk
+            function seekVideo(e) {
+                // 'e' é o evento do clique
+                const progressContainerRect = progressContainer.getBoundingClientRect(); // Pega o tamanho e posição da barra
+                // Calcula onde o usuário clicou na barra (de 0 a 1)
+                const clickPositionInPixels = e.clientX - progressContainerRect.left;
+                const clickPositionRatio = clickPositionInPixels / progressContainerRect.width;
+                // Garante que o valor esteja entre 0 e 1 (vai que o clique sai um tiquinho fora kkk)
+                const seekRatio = Math.max(0, Math.min(1, clickPositionRatio));
+
+                if (video.duration > 0) {
+                     // Calcula o tempo correspondente no vídeo
+                    const seekTime = seekRatio * video.duration;
+                    console.log(`Clicou na barra! Posição: ${seekRatio.toFixed(2)}, Tempo: ${seekTime.toFixed(1)}s`);
+                    video.currentTime = seekTime; // PULA PRO TEMPO!
+                    updateProgressBar(); // Atualiza a barrinha visualmente na hora
+                    updateBufferBar(); // Atualiza o buffer visual tbm
+                } else {
+                    console.warn("Duração do vídeo indisponível, não foi possível fazer o seek.");
+                }
+            }
+
+            // Mostra o tempo na barrinha quando passa o mouse
+            function showTimeTooltip(e) {
+                 const progressContainerRect = progressContainer.getBoundingClientRect();
+                 const hoverPositionInPixels = e.clientX - progressContainerRect.left;
+                 const hoverPositionRatio = hoverPositionInPixels / progressContainerRect.width;
+                 const hoverRatio = Math.max(0, Math.min(1, hoverPositionRatio));
+
+                 if (video.duration > 0) {
+                    const time = hoverRatio * video.duration;
+                    timeTooltip.textContent = formatTime(time);
+
+                    // Posiciona o tooltip um pouco acima da barra e centralizado no mouse
+                    const tooltipWidth = timeTooltip.offsetWidth;
+                    const containerWidth = progressContainer.offsetWidth;
+                    // Calcula a posição left pra centralizar, mas sem sair da tela
+                    let tooltipLeft = e.clientX - progressContainerRect.left - (tooltipWidth / 2);
+                    tooltipLeft = Math.max(0, Math.min(containerWidth - tooltipWidth, tooltipLeft)); // Limita dentro da barra
+
+                    timeTooltip.style.left = tooltipLeft + 'px';
+                    // Ajusta a posição vertical pra ficar ACIMA da barra
+                    const progressBarHeight = progressContainer.offsetHeight;
+                    timeTooltip.style.bottom = (progressBarHeight + 8) + 'px'; // 8px acima da barra
+                    timeTooltip.style.display = 'block';
+                }
+            }
+
+            function hideTimeTooltip() {
+                timeTooltip.style.display = 'none';
+            }
+
+            // FORMATAR TEMPO (Pra ficar bonitinho 0:00 em vez de 123.456 kkkk)
+            function formatTime(seconds) {
+                if (isNaN(seconds) || seconds < 0) return '0:00'; // Segurança contra NaN
+
+                const date = new Date(0);
+                date.setSeconds(seconds);
+                const timeString = date.toISOString().substr(11, 8); // Pega HH:MM:SS
+
+                // Se for menos de 1 hora, mostra só MM:SS
+                if (timeString.startsWith('00:')) {
+                    return timeString.substr(3); // Pega MM:SS
+                } else {
+                    return timeString; // Mostra HH:MM:SS
+                }
+            }
+
+            function updateDuration() {
+                if (video.duration && isFinite(video.duration)) {
+                    durationElement.textContent = formatTime(video.duration);
+                    console.log("Duração definida:", formatTime(video.duration));
+                } else {
+                     durationElement.textContent = "0:00"; // Ou "Carregando..."
+                     console.log("Duração ainda não disponível ou infinita.");
+                }
+            }
+
+            // MOSTRAR/ESCONDER CONTROLES (O show do some-some kkkk)
+            function showControls() {
+                // console.log("Mostrando controles");
+                playerOverlay.classList.add('show');
+                // Se mostrar, cancela qualquer timeout que ia esconder
+                clearTimeout(hideTimeout);
+                // Deixa o cursor aparecer
+                playerContainer.style.cursor = 'default';
+            }
+
+            function hideControls() {
+                // Só esconde se:
+                // 1. O vídeo estiver tocando
+                // 2. O mouse não estiver sobre o player
+                // 3. Nenhum menu (velocidade, qualidade) estiver aberto
+                 if (isPlaying && !isUserInteracting && !speedMenu.classList.contains('show') && !qualityMenu.classList.contains('show')) {
+                    // console.log("Escondendo controles");
+                    playerOverlay.classList.remove('show');
+                     // Esconde o cursor também
+                    playerContainer.style.cursor = 'none';
+                 }
+            }
+
+            function hideControlsAfterDelay() {
+                clearTimeout(hideTimeout); // Cancela o anterior se houver
+                hideTimeout = setTimeout(hideControls, 3000); // Esconde depois de 3 segundos parado
+            }
+
+            // Gerencia o movimento do mouse
+            function handleMouseMove() {
+                 const now = Date.now();
+                 // Se o mouse estava parado e começou a mexer, ou se já estava mexendo
+                 if (!isMouseMoving || now - lastMouseMoveTime > 50) { // Evita processar CADA pixel de movimento
+                    isMouseMoving = true;
+                    showControls(); // Mostra os controles NA HORA
+
+                     // Agenda pra esconder DEPOIS que parar de mexer
+                    clearTimeout(mouseStillTimeout);
+                    mouseStillTimeout = setTimeout(() => {
+                        isMouseMoving = false;
+                        // Se o vídeo ainda estiver tocando E o mouse não estiver em cima, esconde
+                        if (isPlaying && !isUserInteracting) {
+                            hideControlsAfterDelay();
+                        }
+                     }, 2000); // Considera parado após 2 segundos sem mexer
+                 }
+                 lastMouseMoveTime = now; // Atualiza a hora do último movimento
+            }
+
+            // MENU DE VELOCIDADE
+            function toggleSpeedMenu(e) {
+                e.stopPropagation(); // Impede o clique de fechar o menu ou pausar o vídeo
+                const showing = speedMenu.classList.toggle('show');
+                console.log("Toggle Speed Menu:", showing ? "Mostrando" : "Escondendo");
+                // Esconde o outro menu se estiver aberto
+                qualityMenu.classList.remove('show');
+                // Se abriu, o usuário está interagindo
+                if(showing) isUserInteracting = true;
+                // Se fechou, volta a checar interação normal
+                else handleMouseInteractionEnd();
+            }
+
+            function setPlaybackSpeed(speed) {
+                video.playbackRate = speed;
+                console.log("Velocidade alterada para:", speed + "x");
+
+                // Atualiza qual opção está ativa (com o check ✔)
+                speedOptions.forEach(option => {
+                    option.classList.toggle('active', parseFloat(option.getAttribute('data-speed')) === speed);
+                });
+                // Esconde o menu
+                speedMenu.classList.remove('show');
+                handleMouseInteractionEnd(); // Avisa que parou de interagir com o menu
+            }
+
+            // MENU DE QUALIDADE (Faz de conta por enquanto kkkk)
+            function toggleQualityMenu(e) {
+                e.stopPropagation(); // Impede o clique de fechar o menu ou pausar o vídeo
+                const showing = qualityMenu.classList.toggle('show');
+                console.log("Toggle Quality Menu:", showing ? "Mostrando" : "Escondendo");
+                // Esconde o outro menu
+                speedMenu.classList.remove('show');
+                // Se abriu, o usuário está interagindo
+                if(showing) isUserInteracting = true;
+                // Se fechou, volta a checar interação normal
+                else handleMouseInteractionEnd();
+            }
+
+            function setQuality(quality) {
+                // Aqui entraria a lógica pra trocar a fonte do vídeo (se tivesse várias)
+                // Ex: video.src = getQualitySource(quality); video.load(); video.currentTime = oldTime; video.play();
+                console.log(`Qualidade (teoricamente) alterada para: ${quality}`);
+
+                qualityOptions.forEach(option => {
+                    option.classList.toggle('active', option.getAttribute('data-quality') === quality);
+                });
+                qualityMenu.classList.remove('show');
+                handleMouseInteractionEnd(); // Avisa que parou de interagir com o menu
+            }
+
+            // Função pra quando o usuário para de interagir com menus ou sliders
+            function handleMouseInteractionEnd() {
+                isUserInteracting = false; // Assume que parou
+                // Verifica se o mouse ainda está sobre o player
+                // (Um jeito simples é checar se o overlay está visível, mas pode não ser perfeito)
+                // Vamos apenas reiniciar o timeout pra esconder se o vídeo estiver tocando
+                if (isPlaying) {
+                    hideControlsAfterDelay();
+                }
+            }
+
+            // FIM DO VÍDEO (Acabou! Próximo!)
+            video.addEventListener('ended', function() {
+                console.log("Vídeo terminou!");
+                isPlaying = false;
+                isEnd = true; // Marca que chegou no final
+                updatePlayPauseIcons();
+                showControls(); // Mostra os controles (e a tela final/próximo ep)
+                playerContainer.style.cursor = 'default'; // Garante que o cursor apareça
+
+                // Marcar como concluído no servidor
+                updateServerProgress(true);
+
+                {% if next_media %}
+                    // Se tem próximo episódio, mostra o overlay dele
+                    console.log("Mostrando overlay do próximo episódio.");
+                    showNextEpisodeOverlay();
+                {% else %}
+                    // Se não tem (é filme ou último ep), mostra a tela final
+                    console.log("Mostrando tela final.");
+                    endScreen.classList.add('show');
+                {% endif %}
+            });
+
+            {% if next_media %}
+            function showNextEpisodeOverlay() {
+                // Esconde a tela final normal (caso tenha aparecido por algum motivo)
+                endScreen.classList.remove('show');
+                // Mostra o overlay do próximo ep
+                nextEpisodeOverlay.classList.add('show');
+
+                let countdown = 10; // Começa a contagem regressiva
+                nextEpisodeCounter.textContent = countdown;
+
+                // Limpa timers antigos pra não acumular kkkk
+                clearInterval(nextEpisodeInterval);
+                clearTimeout(nextEpisodeTimeout);
+
+                // Atualiza o contador a cada segundo
+                nextEpisodeInterval = setInterval(() => {
+                    countdown--;
+                    nextEpisodeCounter.textContent = countdown;
+
+                    if (countdown <= 0) {
+                        clearInterval(nextEpisodeInterval); // Para o contador
+                    }
+                }, 1000);
+
+                // Agenda o pulo pro próximo episódio
+                nextEpisodeTimeout = setTimeout(() => {
+                    console.log("Tempo esgotado, pulando para o próximo episódio!");
+                    window.location.href = "{{ url_for('watch_episode', episode_id=next_media.id) }}";
+                }, 10000); // 10 segundos
+            }
+
+            function cancelNextEpisodeAutoplay() {
+                console.log("Autoplay do próximo episódio cancelado.");
+                nextEpisodeOverlay.classList.remove('show'); // Esconde o overlay
+                clearInterval(nextEpisodeInterval); // Para o contador
+                clearTimeout(nextEpisodeTimeout); // Cancela o pulo automático
+
+                // Mostra a tela de fim padrão (com opções de replay/ver lista)
+                isEnd = true; // Garante que estamos no estado 'finalizado'
+                endScreen.classList.add('show');
+            }
+            {% endif %}
+
+            // === EVENT LISTENERS (Os fofoqueiros do JavaScript kkkk) ===
+
+            // Atualiza a barra de progresso conforme o vídeo anda
+            video.addEventListener('timeupdate', updateProgressBar);
+
+            // Clique no vídeo pra Play/Pause (Já existia, mas é bom ter certeza kkkk)
+            video.addEventListener('click', function(e) {
+                console.log("Clique DIRETO no vídeo detectado.");
+                // Só faz algo se o clique foi realmente no vídeo e não passou por cima de um controle visível
+                 const overlayRect = playerOverlay.getBoundingClientRect();
+                 // Verifica se o overlay está visível E se o clique foi DENTRO dele
+                 // Isso evita pausar se clicar no vídeo enquanto os controles estão escondidos
+                 if (playerOverlay.classList.contains('show') &&
+                     e.clientX >= overlayRect.left && e.clientX <= overlayRect.right &&
+                     e.clientY >= overlayRect.top && e.clientY <= overlayRect.bottom) {
+                    // Se o overlay está visível, o clique nele (na área transparente) já cuida disso.
+                    // Não faz nada aqui pra evitar duplicidade.
+                    console.log("Clique no vídeo, mas overlay visível. Deixando overlay lidar.");
+                 } else if (!playerOverlay.classList.contains('show')) {
+                     // Se os controles estão ESCONDIDOS, clicar no vídeo MOSTRA eles em vez de pausar
+                     console.log("Clique no vídeo com controles escondidos. Mostrando controles.");
+                     showControls();
+                     hideControlsAfterDelay(); // Agenda pra esconder de novo
+                 }
+                 // A lógica de play/pause foi movida pro clique no overlay ou botões específicos
+                 // togglePlay(); // REMOVIDO DAQUI para evitar conflito
+            });
+
+            // === A GRANDE MUDANÇA! Clique no OVERLAY pra Play/Pause ===
+            playerOverlay.addEventListener('click', function(e) {
+                console.log("Clique detectado no Overlay. Target:", e.target);
+                // Verifica se o clique foi DIRETAMENTE no overlay
+                // E NÃO em um botão, link, slider, ou na barra de progresso dentro dele
+                if (e.target === playerOverlay) {
+                     console.log("Clique foi direto no fundo do overlay. Chamando togglePlay().");
+                     togglePlay();
+                } else {
+                    console.log("Clique foi em um elemento DENTRO do overlay. Deixando o elemento lidar.");
+                }
+            });
+            // ==========================================================
+
+            // Clique no botão grande de play/pause
+            bigPlayBtn.addEventListener('click', (e)=>{
+                 e.stopPropagation(); // Impede que o clique vaze pro overlay/video
+                 console.log("Clique no Big Play Button.");
+                 togglePlay();
+            });
+
+            // Botões de controle
+            playPauseBtn.addEventListener('click', (e)=>{
+                e.stopPropagation();
+                console.log("Clique no botão Play/Pause normal.");
+                togglePlay();
+            });
+            muteBtn.addEventListener('click', (e)=>{ e.stopPropagation(); toggleMute(); });
+            fullscreenBtn.addEventListener('click', (e)=>{ e.stopPropagation(); toggleFullscreen(); });
+
+            // Volume slider precisa de 'input' (enquanto arrasta) e 'change' (quando solta)
+            volumeSlider.addEventListener('input', (e)=>{
+                e.stopPropagation(); // Para não pausar sem querer
+                isUserInteracting = true; // Está interagindo com o slider
+                updateVolume();
+            });
+            volumeSlider.addEventListener('change', (e)=>{ // Quando solta o mouse
+                e.stopPropagation();
+                handleMouseInteractionEnd(); // Terminou de interagir
+            });
+
+            // Botões de avançar/voltar na barra de controles
+            rewind10Btn.addEventListener('click', (e)=>{ e.stopPropagation(); skipBackward(); });
+            forward10Btn.addEventListener('click', (e)=>{ e.stopPropagation(); skipForward(); });
+
+            // === Barra de progresso (A que já devia funcionar kkkk) ===
+            progressContainer.addEventListener('click', (e)=>{
+                 e.stopPropagation(); // Impede que o clique vaze e pause o vídeo
+                 console.log("Evento de clique na Barra de Progresso disparado.");
+                 seekVideo(e); // Chama a função pra pular no vídeo
+            });
+            progressContainer.addEventListener('mousemove', (e)=>{ e.stopPropagation(); showTimeTooltip(e); });
+            progressContainer.addEventListener('mouseleave', (e)=>{ e.stopPropagation(); hideTimeTooltip(); });
+            // Adiciona interação pra quando arrasta o mouse na barra (melhora a usabilidade)
+            let isDraggingProgress = false;
+            progressContainer.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                isDraggingProgress = true;
+                isUserInteracting = true; // Está interagindo
+                seekVideo(e); // Pula pra onde clicou
+                console.log("Mouse pressionado na barra de progresso.");
+            });
+            document.addEventListener('mousemove', (e) => { // Escuta no documento todo pra pegar o arraste mesmo fora da barra
+                if (isDraggingProgress) {
+                    e.stopPropagation();
+                    seekVideo(e); // Atualiza enquanto arrasta
+                }
+            });
+            document.addEventListener('mouseup', (e) => {
+                if (isDraggingProgress) {
+                    e.stopPropagation();
+                    isDraggingProgress = false;
+                    handleMouseInteractionEnd(); // Terminou de interagir
+                    console.log("Mouse solto após arrastar a barra.");
+                }
+            });
+
+            // Detecção de mouse parado/movimento DENTRO do player
+            playerContainer.addEventListener('mousemove', handleMouseMove);
+
+            // Mouse entra e sai do player
+            playerContainer.addEventListener('mouseenter', function() {
+                isUserInteracting = true; // Entrou, tá interagindo
+                showControls();
+            });
+
+            playerContainer.addEventListener('mouseleave', function() {
+                isUserInteracting = false; // Saiu, parou de interagir (em teoria)
+                // Só esconde se estiver tocando e nenhum menu aberto
+                if (isPlaying && !speedMenu.classList.contains('show') && !qualityMenu.classList.contains('show')) {
+                    hideControlsAfterDelay();
+                }
+            });
+
+            // Menu de velocidade
+            speedBtn.addEventListener('click', toggleSpeedMenu);
+            speedOptions.forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Para o clique aqui
+                    const speed = parseFloat(this.getAttribute('data-speed'));
+                    setPlaybackSpeed(speed);
+                });
+            });
+
+            // Menu de qualidade
+            qualityBtn.addEventListener('click', toggleQualityMenu);
+            qualityOptions.forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Pra não vazar o clique
+                    const quality = this.getAttribute('data-quality');
+                    setQuality(quality);
+                });
+            });
+
+            // Replay button (se existir no DOM)
+            if (replayBtn) {
+                replayBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    console.log("Replay clicado, voltando do início!");
+                    video.currentTime = 0;
+                    endScreen.classList.remove('show');
+                    isEnd = false;
+                    playVideo();
+                });
+            }
+
+            // Próximo episódio (se existir)
+            {% if next_media %}
+                nextEpisodeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    window.location.href = "{{ url_for('watch_episode', episode_id=next_media.id) }}";
+                });
+
+                cancelNextEpisode.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    cancelNextEpisodeAutoplay();
+                });
+            {% endif %}
+
+            // Teclas de atalho
+            document.addEventListener('keydown', function(e) {
+                // Só funciona se o player estiver em foco
+                if (document.activeElement.tagName.toLowerCase() !== 'input') {
+                    switch(e.key) {
+                        case ' ':  // Espaço
+                        case 'k':  // YouTube style
+                            e.preventDefault();
+                            togglePlay();
+                            break;
+                        case 'ArrowRight':
+                            e.preventDefault();
+                            skipForward();
+                            break;
+                        case 'ArrowLeft':
+                            e.preventDefault();
+                            skipBackward();
+                            break;
+                        case 'f':  // Fullscreen
+                            e.preventDefault();
+                            toggleFullscreen();
+                            break;
+                        case 'm':  // Mute
+                            e.preventDefault();
+                            toggleMute();
+                            break;
+                    }
+                }
+            });
+
+            // Inicialização final
+            console.log("Player inicializado com sucesso! Partiu assistir! 🍿");
+        });
+    </script>
+</body>
+</html>

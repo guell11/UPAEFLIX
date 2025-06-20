@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Conteúdo - UpaéFLIX Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}" type="image/x-icon">
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #131b2a;
+            --bg-card: #1a2437;
+            --accent-color: #ff3e6c;
+            --accent-hover: #ff0a47;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --border-radius: 8px;
+            --card-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+            --sidebar-width: 250px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        a {
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: color 0.3s;
+        }
+
+        /* SIDEBAR - Mesmo estilo do dashboard.html */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--bg-secondary);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            padding: 30px 0;
+            box-shadow: 3px 0 10px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            overflow-y: auto;
+        }
+
+        /* [Incluir estilos da sidebar do dashboard.html] */
+
+        /* MAIN CONTENT */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 30px;
+            max-width: calc(100% - var(--sidebar-width));
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .page-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* TABS */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .tab {
+            padding: 15px 20px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab.active {
+            color: var(--accent-color);
+            border-bottom-color: var(--accent-color);
+        }
+
+        .tab:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* CARD */
+        .card {
+            background-color: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+            margin-bottom: 30px;
+        }
+
+        .card-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        /* SEARCH BAR */
+        .search-container {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 15px;
+            border-radius: var(--border-radius);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .search-btn {
+            padding: 12px 20px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .search-btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        /* TABLE */
+        .content-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .content-table th {
+            text-align: left;
+            padding: 12px 15px;
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .content-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .content-table tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .table-poster {
+            width: 40px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 3px;
+        }
+
+        .title-cell {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .content-title {
+            font-weight: 500;
+        }
+
+        .content-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .badge-movie {
+            background-color: rgba(255, 62, 108, 0.2);
+            color: var(--accent-color);
+        }
+
+        .badge-series {
+            background-color: rgba(23, 162, 184, 0.2);
+            color: var(--info-color);
+        }
+
+        .badge-featured {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: var(--warning-color);
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .action-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-view {
+            background-color: rgba(23, 162, 184, 0.2);
+            color: var(--info-color);
+        }
+
+        .btn-view:hover {
+            background-color: var(--info-color);
+            color: white;
+        }
+
+        .btn-edit {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: var(--warning-color);
+        }
+
+        .btn-edit:hover {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .btn-delete {
+            background-color: rgba(220, 53, 69, 0.2);
+            color: var(--danger-color);
+        }
+
+        .btn-delete:hover {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        /* PAGINATION */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        .page-item {
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.3s;
+            user-select: none;
+        }
+
+        .page-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .page-item.active {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        /* MODAL */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background-color: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .modal.show .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-text {
+            margin-bottom: 20px;
+            color: var(--text-secondary);
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* BUTTONS */
+        .btn {
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 62, 108, 0.3);
+        }
+
+        .btn-secondary {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .empty-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .empty-text {
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* RESPONSIVO */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 60px;
+                overflow: visible;
+            }
+
+            .sidebar-logo, .nav-text, .nav-section-title {
+                display: none;
+            }
+
+            .nav-item {
+                padding: 12px;
+                justify-content: center;
+            }
+
+            .nav-icon {
+                margin-right: 0;
+                font-size: 1.4rem;
+            }
+
+            .main-content {
+                margin-left: 60px;
+                max-width: calc(100% - 60px);
+            }
+
+            .tabs {
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            .content-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .main-content {
+                padding: 20px 15px;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .search-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <a href="{{ url_for('index') }}" class="sidebar-logo">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="UpaéFLIX">
+                UpaéFLIX Admin
+            </a>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-section-title">Principal</div>
+                <a href="{{ url_for('admin_dashboard') }}" class="nav-item">
+                    <i class="fas fa-tachometer-alt nav-icon"></i>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="{{ url_for('admin_upload') }}" class="nav-item">
+                    <i class="fas fa-cloud-upload-alt nav-icon"></i>
+                    <span class="nav-text">Upload de Conteúdo</span>
+                </a>
+                <a href="{{ url_for('admin_manage_content') }}" class="nav-item active">
+                    <i class="fas fa-film nav-icon"></i>
+                    <span class="nav-text">Gerenciar Conteúdo</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Usuários</div>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-users nav-icon"></i>
+                    <span class="nav-text">Gerenciar Usuários</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-chart-line nav-icon"></i>
+                    <span class="nav-text">Estatísticas</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Configurações</div>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-cog nav-icon"></i>
+                    <span class="nav-text">Configurações</span>
+                </a>
+                <a href="{{ url_for('index') }}" class="nav-item">
+                    <i class="fas fa-home nav-icon"></i>
+                    <span class="nav-text">Voltar ao Site</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="nav-item">
+                    <i class="fas fa-sign-out-alt nav-icon"></i>
+                    <span class="nav-text">Sair</span>
+                </a>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">Gerenciar Conteúdo</h1>
+            <div class="page-actions">
+                <a href="{{ url_for('admin_upload') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Adicionar Conteúdo
+                </a>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="movies">Filmes</div>
+            <div class="tab" data-tab="series">Séries</div>
+            <div class="tab" data-tab="categories">Categorias</div>
+        </div>
+
+        <!-- FILMES -->
+        <div class="tab-content active" id="movies-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Filmes</h2>
+                </div>
+                <div class="card-body">
+                    <div class="search-container">
+                        <input type="text" class="search-input" id="movieSearch" placeholder="Buscar filmes por título...">
+                        <button class="search-btn">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
+                    </div>
+
+                    {% if movies %}
+                    <div class="table-container">
+                        <table class="content-table">
+                            <thead>
+                                <tr>
+                                    <th>Título</th>
+                                    <th>Ano</th>
+                                    <th>Duração</th>
+                                    <th>Categorias</th>
+                                    <th>Views</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for movie in movies %}
+                                <tr>
+                                    <td>
+                                        <div class="title-cell">
+                                            <img src="{{ url_for('static', filename=movie.poster_url) }}" alt="{{ movie.title }}" class="table-poster">
+                                            <span class="content-title">{{ movie.title }}</span>
+                                        </div>
+                                    </td>
+                                    <td>{{ movie.release_year }}</td>
+                                    <td>{{ movie.duration }} min</td>
+                                    <td>
+                                        {% for category in movie.categories %}
+                                        {{ category.name }}{% if not loop.last %}, {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    <td>{{ movie.views_count }}</td>
+                                    <td>
+                                        {% if movie.featured %}
+                                        <span class="content-badge badge-featured">Destaque</span>
+                                        {% else %}
+                                        <span class="content-badge">Normal</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <a href="{{ url_for('movie_details', movie_id=movie.id) }}" class="action-btn btn-view" title="Ver">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('admin_edit_movie', movie_id=movie.id) }}" class="action-btn btn-edit" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button class="action-btn btn-delete delete-btn" data-id="{{ movie.id }}" data-type="movie" data-title="{{ movie.title }}" title="Excluir">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginação -->
+                    <div class="pagination">
+                        <div class="page-item"><i class="fas fa-chevron-left"></i></div>
+                        <div class="page-item active">1</div>
+                        <div class="page-item">2</div>
+                        <div class="page-item">3</div>
+                        <div class="page-item"><i class="fas fa-chevron-right"></i></div>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-film"></i>
+                        </div>
+                        <h2 class="empty-title">Nenhum filme encontrado</h2>
+                        <p class="empty-text">Ainda não existem filmes cadastrados na plataforma. Adicione seu primeiro filme agora.</p>
+                        <a href="{{ url_for('admin_upload') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Adicionar Filme
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- SÉRIES -->
+        <div class="tab-content" id="series-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Séries</h2>
+                </div>
+                <div class="card-body">
+                    <div class="search-container">
+                        <input type="text" class="search-input" id="seriesSearch" placeholder="Buscar séries por título...">
+                        <button class="search-btn">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
+                    </div>
+
+                    {% if series %}
+                    <div class="table-container">
+                        <table class="content-table">
+                            <thead>
+                                <tr>
+                                    <th>Título</th>
+                                    <th>Ano</th>
+                                    <th>Temporadas</th>
+                                    <th>Categorias</th>
+                                    <th>Views</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for series_item in series %}
+                                <tr>
+                                    <td>
+                                        <div class="title-cell">
+                                            <img src="{{ url_for('static', filename=series_item.poster_url) }}" alt="{{ series_item.title }}" class="table-poster">
+                                            <span class="content-title">{{ series_item.title }}</span>
+                                        </div>
+                                    </td>
+                                    <td>{{ series_item.release_year }}</td>
+                                    <td>{{ series_item.get_seasons()|length }}</td>
+                                    <td>
+                                        {% for category in series_item.categories %}
+                                        {{ category.name }}{% if not loop.last %}, {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    <td>{{ series_item.views_count }}</td>
+                                    <td>
+                                        {% if series_item.featured %}
+                                        <span class="content-badge badge-featured">Destaque</span>
+                                        {% else %}
+                                        <span class="content-badge">Normal</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <a href="{{ url_for('series_details', series_id=series_item.id) }}" class="action-btn btn-view" title="Ver">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('admin_edit_series', series_id=series_item.id) }}" class="action-btn btn-edit" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ url_for('admin_manage_episodes', series_id=series_item.id) }}" class="action-btn btn-view" title="Episódios">
+                                                <i class="fas fa-list"></i>
+                                            </a>
+                                            <button class="action-btn btn-delete delete-btn" data-id="{{ series_item.id }}" data-type="series" data-title="{{ series_item.title }}" title="Excluir">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginação -->
+                    <div class="pagination">
+                        <div class="page-item"><i class="fas fa-chevron-left"></i></div>
+                        <div class="page-item active">1</div>
+                        <div class="page-item">2</div>
+                        <div class="page-item">3</div>
+                        <div class="page-item"><i class="fas fa-chevron-right"></i></div>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-tv"></i>
+                        </div>
+                        <h2 class="empty-title">Nenhuma série encontrada</h2>
+                        <p class="empty-text">Ainda não existem séries cadastradas na plataforma. Adicione sua primeira série agora.</p>
+                        <a href="{{ url_for('admin_upload') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Adicionar Série
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- CATEGORIAS -->
+        <div class="tab-content" id="categories-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Categorias</h2>
+                </div>
+                <div class="card-body">
+                    <div class="search-container">
+                        <input type="text" class="search-input" id="categorySearch" placeholder="Buscar categorias por nome...">
+                        <button class="search-btn">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
+                    </div>
+
+                    {% if categories %}
+                    <div class="table-container">
+                        <table class="content-table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Slug</th>
+                                    <th>Filmes</th>
+                                    <th>Séries</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for category in categories %}
+                                <tr>
+                                    <td>{{ category.name }}</td>
+                                    <td>{{ category.slug }}</td>
+                                    <td>{{ category.movies.count() }}</td>
+                                    <td>{{ category.series.count() }}</td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <a href="{{ url_for('category', category_slug=category.slug) }}" class="action-btn btn-view" title="Ver">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <button class="action-btn btn-edit edit-category-btn" data-id="{{ category.id }}" data-name="{{ category.name }}" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="action-btn btn-delete delete-btn" data-id="{{ category.id }}" data-type="category" data-title="{{ category.name }}" title="Excluir">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <h2 class="empty-title">Nenhuma categoria encontrada</h2>
+                        <p class="empty-text">Ainda não existem categorias cadastradas na plataforma. Adicione sua primeira categoria agora.</p>
+                        <a href="{{ url_for('admin_upload') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Adicionar Categoria
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO -->
+    <div class="modal" id="deleteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Confirmar Exclusão</h2>
+                <button class="modal-close" id="closeDeleteModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-text">Tem certeza que deseja excluir <span id="deleteItemName">este item</span>? Esta ação não pode ser desfeita.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelDelete">Cancelar</button>
+                <button class="btn btn-danger" id="confirmDelete">Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE EDIÇÃO DE CATEGORIA -->
+    <div class="modal" id="editCategoryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Editar Categoria</h2>
+                <button class="modal-close" id="closeEditCategoryModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editCategoryForm">
+                    <input type="hidden" id="categoryId">
+                    <div style="margin-bottom: 20px;">
+                        <label for="categoryName" style="display: block; margin-bottom: 8px; font-weight: 500;">Nome da Categoria</label>
+                        <input type="text" id="categoryName" style="width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background-color: rgba(255,255,255,0.05); color: white;">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelEditCategory">Cancelar</button>
+                <button class="btn btn-primary" id="saveCategory">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // TABS
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+
+                    this.classList.add('active');
+                    document.getElementById(`${tabId}-content`).classList.add('active');
+                });
+            });
+
+            // BUSCA
+            const movieSearch = document.getElementById('movieSearch');
+            const seriesSearch = document.getElementById('seriesSearch');
+            const categorySearch = document.getElementById('categorySearch');
+
+            function setupSearch(inputElement, tableSelector) {
+                if (!inputElement) return;
+
+                inputElement.addEventListener('keyup', function() {
+                    const value = this.value.toLowerCase();
+                    const table = document.querySelector(tableSelector);
+
+                    if (!table) return;
+
+                    const rows = table.querySelectorAll('tbody tr');
+
+                    rows.forEach(row => {
+                        const text = row.textContent.toLowerCase();
+                        if (text.includes(value)) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                });
+            }
+
+            setupSearch(movieSearch, '#movies-content .content-table');
+            setupSearch(seriesSearch, '#series-content .content-table');
+            setupSearch(categorySearch, '#categories-content .content-table');
+
+            // MODAL DE EXCLUSÃO
+            const deleteModal = document.getElementById('deleteModal');
+            const deleteButtons = document.querySelectorAll('.delete-btn');
+            const closeDeleteModal = document.getElementById('closeDeleteModal');
+            const cancelDelete = document.getElementById('cancelDelete');
+            const confirmDelete = document.getElementById('confirmDelete');
+            const deleteItemName = document.getElementById('deleteItemName');
+
+            let itemToDelete = {
+                id: null,
+                type: null
+            };
+
+            deleteButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    const type = this.getAttribute('data-type');
+                    const title = this.getAttribute('data-title');
+
+                    itemToDelete.id = id;
+                    itemToDelete.type = type;
+
+                    deleteItemName.textContent = `"${title}"`;
+                    deleteModal.classList.add('show');
+                });
+            });
+
+            function closeDeleteModalFunc() {
+                deleteModal.classList.remove('show');
+                itemToDelete = { id: null, type: null };
+            }
+
+            closeDeleteModal.addEventListener('click', closeDeleteModalFunc);
+            cancelDelete.addEventListener('click', closeDeleteModalFunc);
+
+            confirmDelete.addEventListener('click', function() {
+                if (!itemToDelete.id || !itemToDelete.type) return;
+
+                // Enviar requisição para excluir o item
+                fetch(`/api/admin/delete`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        id: itemToDelete.id,
+                        type: itemToDelete.type
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remover o item da tabela
+                        const row = document.querySelector(`.delete-btn[data-id="${itemToDelete.id}"][data-type="${itemToDelete.type}"]`).closest('tr');
+                        row.remove();
+
+                        closeDeleteModalFunc();
+
+                        // Verificar se a tabela ficou vazia
+                        const table = document.querySelector(`#${itemToDelete.type}s-content .content-table tbody`);
+                        if (table && table.querySelectorAll('tr').length === 0) {
+                            location.reload(); // Recarregar para mostrar o estado vazio
+                        }
+                    } else {
+                        alert('Erro ao excluir o item: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert('Ocorreu um erro ao excluir o item. Tente novamente.');
+                });
+            });
+
+            // MODAL DE EDIÇÃO DE CATEGORIA
+            const editCategoryModal = document.getElementById('editCategoryModal');
+            const editCategoryButtons = document.querySelectorAll('.edit-category-btn');
+            const closeEditCategoryModal = document.getElementById('closeEditCategoryModal');
+            const cancelEditCategory = document.getElementById('cancelEditCategory');
+            const saveCategory = document.getElementById('saveCategory');
+            const categoryIdInput = document.getElementById('categoryId');
+            const categoryNameInput = document.getElementById('categoryName');
+
+            editCategoryButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    const name = this.getAttribute('data-name');
+
+                    categoryIdInput.value = id;
+                    categoryNameInput.value = name;
+
+                    editCategoryModal.classList.add('show');
+                });
+            });
+
+            function closeEditCategoryModalFunc() {
+                editCategoryModal.classList.remove('show');
+                categoryIdInput.value = '';
+                categoryNameInput.value = '';
+            }
+
+            closeEditCategoryModal.addEventListener('click', closeEditCategoryModalFunc);
+            cancelEditCategory.addEventListener('click', closeEditCategoryModalFunc);
+
+            saveCategory.addEventListener('click', function() {
+                const id = categoryIdInput.value;
+                const name = categoryNameInput.value;
+
+                if (!id || !name) return;
+
+                // Enviar requisição para atualizar a categoria
+                fetch(`/api/admin/update-category`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        id: id,
+                        name: name
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Atualizar o nome na tabela
+                        const button = document.querySelector(`.edit-category-btn[data-id="${id}"]`);
+                        const row = button.closest('tr');
+                        row.querySelector('td:first-child').textContent = name;
+                        button.setAttribute('data-name', name);
+
+                        closeEditCategoryModalFunc();
+                    } else {
+                        alert('Erro ao atualizar a categoria: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert('Ocorreu um erro ao atualizar a categoria. Tente novamente.');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
