@@ -1099,22 +1099,6 @@
 
             {% if current_user.is_authenticated %}
             <div class="user-menu">
-                <img src="{{ url_for('static', filename='img/' + current_user.profile_pic) }}" alt="Perfil" class="user-avatar">
-                <div class="user-dropdown">
-                    <div class="user-dropdown-item">
-                        <i class="fas fa-user"></i>
-                        <span>Perfil</span>
-                    </div>
-                    {% if current_user.is_admin %}
-                    <div class="user-dropdown-item">
-                        <i class="fas fa-cog"></i>
-                        <a href="{{ url_for('admin_dashboard') }}">Admin</a>
-                    </div>
-                    {% endif %}
-                    <div class="user-dropdown-item">
-                        <i class="fas fa-cog"></i>
-                        <span>Configurações</span>
-                    </div>
                     <div class="user-dropdown-item">
                         <i class="fas fa-sign-out-alt"></i>
                         <a href="{{ url_for('logout') }}">Sair</a>
