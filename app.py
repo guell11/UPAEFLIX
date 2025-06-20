@@ -1345,6 +1345,215 @@ def sample_data():
     create_sample_data()
 
 
+@app.route('/admin/users')
+@login_required
+@admin_required
+def admin_manage_users():
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '')
+
+    # Filtrar usuários por busca se necessário
+    if search:
+        users = User.query.filter(
+            db.or_(
+                User.username.ilike(f'%{search}%'),
+                User.email.ilike(f'%{search}%')
+            )
+        ).order_by(User.created_at.desc()).paginate(
+            page=page, per_page=20, error_out=False
+        )
+    else:
+        users = User.query.order_by(User.created_at.desc()).paginate(
+            page=page, per_page=20, error_out=False
+        )
+
+    # Estatísticas dos usuários
+    total_users = User.query.count()
+    admin_users = User.query.filter_by(is_admin=True).count()
+    regular_users = total_users - admin_users
+
+    return render_template('admin/manage_users.html',
+                           users=users,
+                           search=search,
+                           total_users=total_users,
+                           admin_users=admin_users,
+                           regular_users=regular_users)
+
+
+@app.route('/admin/user/<int:user_id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_edit_user(user_id):
+    user = User.query.get_or_404(user_id)
+
+    if request.method == 'POST':
+        try:
+            # Atualizar dados básicos
+            username = request.form.get('username', '').strip()
+            email = request.form.get('email', '').strip()
+            is_admin = bool(request.form.get('is_admin', False))
+
+            # Validações
+            if not username or not email:
+                flash('Nome de usuário e email são obrigatórios!', 'danger')
+                return redirect(url_for('admin_edit_user', user_id=user_id))
+
+            # Verificar se username já existe (exceto para o próprio usuário)
+            existing_user = User.query.filter(User.username == username, User.id != user_id).first()
+            if existing_user:
+                flash('Nome de usuário já existe!', 'danger')
+                return redirect(url_for('admin_edit_user', user_id=user_id))
+
+            # Verificar se email já existe (exceto para o próprio usuário)
+            existing_email = User.query.filter(User.email == email, User.id != user_id).first()
+            if existing_email:
+                flash('Email já está em uso!', 'danger')
+                return redirect(url_for('admin_edit_user', user_id=user_id))
+
+            # Atualizar dados
+            user.username = username
+            user.email = email
+            user.is_admin = is_admin
+
+            # Atualizar senha se fornecida
+            new_password = request.form.get('new_password', '').strip()
+            if new_password:
+                if len(new_password) < 6:
+                    flash('Nova senha deve ter pelo menos 6 caracteres!', 'danger')
+                    return redirect(url_for('admin_edit_user', user_id=user_id))
+                user.set_password(new_password)
+
+            db.session.commit()
+            flash('Usuário atualizado com sucesso!', 'success')
+            return redirect(url_for('admin_manage_users'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao atualizar usuário: {str(e)}', 'danger')
+            print(f"Erro ao editar usuário: {str(e)}")
+
+    return render_template('admin/edit_user.html', user=user)
+
+
+@app.route('/api/admin/user/delete', methods=['POST'])
+@login_required
+@admin_required
+def api_admin_delete_user():
+    data = request.json
+
+    if not data or 'user_id' not in data:
+        return jsonify({'success': False, 'message': 'ID do usuário é obrigatório'})
+
+    try:
+        user_id = int(data['user_id'])
+
+        # Não permitir deletar próprio usuário
+        if user_id == current_user.id:
+            return jsonify({'success': False, 'message': 'Você não pode deletar sua própria conta!'})
+
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'success': False, 'message': 'Usuário não encontrado'})
+
+        # Verificar se é o último admin
+        if user.is_admin:
+            admin_count = User.query.filter_by(is_admin=True).count()
+            if admin_count <= 1:
+                return jsonify({'success': False, 'message': 'Não é possível deletar o último administrador!'})
+
+        # Deletar usuário (as relações serão deletadas em cascata)
+        db.session.delete(user)
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': f'Usuário "{user.username}" deletado com sucesso!'})
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro ao deletar usuário: {str(e)}")
+        return jsonify({'success': False, 'message': f'Erro ao deletar usuário: {str(e)}'})
+
+
+@app.route('/api/admin/user/toggle-admin', methods=['POST'])
+@login_required
+@admin_required
+def api_admin_toggle_user_admin():
+    data = request.json
+
+    if not data or 'user_id' not in data:
+        return jsonify({'success': False, 'message': 'ID do usuário é obrigatório'})
+
+    try:
+        user_id = int(data['user_id'])
+
+        # Não permitir alterar próprio status
+        if user_id == current_user.id:
+            return jsonify({'success': False, 'message': 'Você não pode alterar seu próprio status de admin!'})
+
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'success': False, 'message': 'Usuário não encontrado'})
+
+        # Se está removendo admin, verificar se não é o último
+        if user.is_admin:
+            admin_count = User.query.filter_by(is_admin=True).count()
+            if admin_count <= 1:
+                return jsonify({'success': False, 'message': 'Não é possível remover o último administrador!'})
+
+        # Alternar status de admin
+        user.is_admin = not user.is_admin
+        db.session.commit()
+
+        status = "administrador" if user.is_admin else "usuário comum"
+        return jsonify(
+            {'success': True, 'message': f'Usuário "{user.username}" agora é {status}!', 'is_admin': user.is_admin})
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro ao alterar status admin: {str(e)}")
+        return jsonify({'success': False, 'message': f'Erro ao alterar status: {str(e)}'})
+
+
+@app.route('/api/admin/users/stats')
+@login_required
+@admin_required
+def api_admin_users_stats():
+    try:
+        # Estatísticas gerais
+        total_users = User.query.count()
+        admin_users = User.query.filter_by(is_admin=True).count()
+
+        # Usuários mais ativos (por views)
+        most_active = db.session.query(
+            User.username,
+            User.id,
+            func.count(View.id).label('total_views')
+        ).join(View).group_by(User.id).order_by(func.count(View.id).desc()).limit(10).all()
+
+        # Usuários registrados por mês (últimos 6 meses)
+        from datetime import datetime, timedelta
+        six_months_ago = datetime.utcnow() - timedelta(days=180)
+
+        monthly_registrations = db.session.query(
+            func.strftime('%Y-%m', User.created_at).label('month'),
+            func.count(User.id).label('count')
+        ).filter(User.created_at >= six_months_ago).group_by(
+            func.strftime('%Y-%m', User.created_at)
+        ).all()
+
+        return jsonify({
+            'success': True,
+            'total_users': total_users,
+            'admin_users': admin_users,
+            'regular_users': total_users - admin_users,
+            'most_active': [{'username': u[0], 'id': u[1], 'views': u[2]} for u in most_active],
+            'monthly_registrations': [{'month': m[0], 'count': m[1]} for m in monthly_registrations]
+        })
+
+    except Exception as e:
+        print(f"Erro ao buscar estatísticas: {str(e)}")
+        return jsonify({'success': False, 'message': f'Erro ao buscar estatísticas: {str(e)}'})
+
+
 # INICIALIZAR APLICAÇÃO
 if __name__ == '__main__':
     # Criar pastas de upload se não existirem
