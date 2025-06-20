@@ -83,12 +83,6 @@ text
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
-
-- Flask community for the excellent framework
-- Open source contributors worldwide
-- PostgreSQL team for the robust database system
-
 
 ⭐ **Star this repository if you find it useful!**
 
